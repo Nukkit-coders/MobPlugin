@@ -36,6 +36,8 @@ public class BlockEntitySpawner extends BlockEntitySpawnable {
     private int minSpawnCount;
     private int maxSpawnCount;
 
+    private NukkitRandom nukkitRandom = new NukkitRandom();
+
     public static final String TAG_ID = "id";
     public static final String TAG_X = "x";
     public static final String TAG_Y = "y";
@@ -126,7 +128,7 @@ public class BlockEntitySpawner extends BlockEntitySpawnable {
                 }
             }
 
-            int amountToSpawn = minSpawnCount + new NukkitRandom().nextBoundedInt(maxSpawnCount);
+            int amountToSpawn = minSpawnCount + nukkitRandom.nextBoundedInt(maxSpawnCount);
             for(int i = 0; i < amountToSpawn; i++) {
                 if (isValid && list.size() <= this.maxNearbyEntities) {
                     Position pos = new Position
@@ -238,6 +240,5 @@ public class BlockEntitySpawner extends BlockEntitySpawnable {
     public void setMaxNearbyEntities(int count) {
         this.maxNearbyEntities = count;
     }
-
 
 }

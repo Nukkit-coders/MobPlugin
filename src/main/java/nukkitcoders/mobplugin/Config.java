@@ -30,14 +30,20 @@ public class Config {
                 pluginConfig.set("other.maximum-spawner-count", 4);
             } else if (pluginConfig.getInt("config-version") == 14) {
                 pluginConfig.set("other.check-tamed-entity-attack", true);
+                pluginConfig.set("other.minimum-spawner-count", 1);
+                pluginConfig.set("other.maximum-spawner-count", 4);
             } else if (pluginConfig.getInt("config-version") == 13) {
                 pluginConfig.set("autospawn.piglin", 0);
+                pluginConfig.set("other.minimum-spawner-count", 1);
+                pluginConfig.set("other.maximum-spawner-count", 4);
             } else if (pluginConfig.getInt("config-version") == 12) {
                 pluginConfig.set("autospawn.fox", 0);
                 pluginConfig.set("autospawn.panda", 0);
                 pluginConfig.set("autospawn.drowned", 0);
                 pluginConfig.set("autospawn.piglin", 0);
                 pluginConfig.set("other.check-tamed-entity-attack", true);
+                pluginConfig.set("other.minimum-spawner-count", 1);
+                pluginConfig.set("other.maximum-spawner-count", 4);
             } else if (pluginConfig.getInt("config-version") == 11) {
                 pluginConfig.set("other.spawners-enabled", true);
                 pluginConfig.set("other.end-enderman-spawning", 10);
@@ -46,6 +52,8 @@ public class Config {
                 pluginConfig.set("autospawn.drowned", 0);
                 pluginConfig.set("autospawn.piglin", 0);
                 pluginConfig.set("other.check-tamed-entity-attack", true);
+                pluginConfig.set("other.minimum-spawner-count", 1);
+                pluginConfig.set("other.maximum-spawner-count", 4);
             } else if (pluginConfig.getInt("config-version") == 10) {
                 pluginConfig.set("other.kill-mobs-on-despawn", false);
                 pluginConfig.set("other.spawners-enabled", true);
@@ -55,6 +63,8 @@ public class Config {
                 pluginConfig.set("autospawn.drowned", 0);
                 pluginConfig.set("autospawn.piglin", 0);
                 pluginConfig.set("other.check-tamed-entity-attack", true);
+                pluginConfig.set("other.minimum-spawner-count", 1);
+                pluginConfig.set("other.maximum-spawner-count", 4);
             } else if (pluginConfig.getInt("config-version") == 9) {
                 pluginConfig.set("other.spawn-no-spawning-area", -1);
                 pluginConfig.set("other.kill-mobs-on-despawn", false);
@@ -65,6 +75,8 @@ public class Config {
                 pluginConfig.set("autospawn.drowned", 0);
                 pluginConfig.set("autospawn.piglin", 0);
                 pluginConfig.set("other.check-tamed-entity-attack", true);
+                pluginConfig.set("other.minimum-spawner-count", 1);
+                pluginConfig.set("other.maximum-spawner-count", 4);
             } else {
                 plugin.getLogger().warning("MobPlugin's config file is outdated. Please delete the old config.");
                 plugin.getLogger().error("Config error. The plugin will be disabled.");
