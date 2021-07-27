@@ -139,6 +139,7 @@ public class Creeper extends WalkingMonster implements EntityExplosive {
             this.exploding = true;
             level.addLevelSoundEvent(this, LevelSoundEventPacket.SOUND_IGNITE);
             this.setDataFlag(DATA_FLAGS, DATA_FLAG_IGNITED, true);
+            this.setPowered(true);
             this.level.addSound(this, Sound.RANDOM_FUSE);
             level.getServer().getScheduler().scheduleDelayedTask(null, this::explode, 30);
             return true;
