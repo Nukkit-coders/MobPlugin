@@ -116,7 +116,11 @@ public abstract class BaseEntity extends EntityCreature implements EntityAgeable
     public void setBaby(boolean baby) {
         this.baby = baby;
         this.setDataFlag(DATA_FLAGS, DATA_FLAG_BABY, baby);
-        this.setScale((float) 0.5);
+        if (baby) {
+            this.setScale(0.5f);
+        } else {
+            this.setScale(1.0f);
+        }
     }
 
     @Override
@@ -132,7 +136,7 @@ public abstract class BaseEntity extends EntityCreature implements EntityAgeable
         }
 
         if (this.namedTag.getBoolean("Baby")) {
-            this.setBaby(true);
+            this.setBaby(this.namedTag.getBoolean("Baby"));
         }
     }
 

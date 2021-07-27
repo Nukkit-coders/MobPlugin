@@ -22,15 +22,6 @@ public abstract class WalkingAnimal extends WalkingEntity implements Animal {
     }
 
     @Override
-    protected void initEntity() {
-        super.initEntity();
-
-        if (this.getDataFlag(DATA_FLAG_BABY, 0)) {
-            this.setDataFlag(DATA_FLAG_BABY, DATA_TYPE_BYTE);
-        }
-    }
-
-    @Override
     public boolean entityBaseTick(int tickDiff) {
         boolean hasUpdate = super.entityBaseTick(tickDiff);
 

@@ -12,6 +12,8 @@ entities:
   despawn-ticks: 12000
   # Do not spawn entities in these worlds
   worlds-spawning-disabled: "exampleworld1, exampleworld2"
+  # do not allow creating snow golems, iron golems and withers in these worlds
+  entity-creation-disabled: "exampleworld1, exampleworld2"
 
 # Spawning limit settings
 # Per player, in 100 blocks range
