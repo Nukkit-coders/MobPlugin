@@ -79,3 +79,5 @@ other:
   end-enderman-spawning: 10
   # If tamed entity owner attacked or attack entity, it will be angry
   check-tamed-entity-attack: true
+  # if set to true, creeper explode blocks
+  creeper-explode-blocks: true
