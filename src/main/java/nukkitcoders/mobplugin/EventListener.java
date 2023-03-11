@@ -201,7 +201,9 @@ public class EventListener implements Listener {
                     .putInt(TAG_X, (int) block.x)
                     .putInt(TAG_Y, (int) block.y)
                     .putInt(TAG_Z, (int) block.z);
-            new BlockEntitySpawner(block.getLevel().getChunk((int) block.x >> 4, (int) block.z >> 4), nbt);
+
+            BlockEntitySpawner entitySpawner = new BlockEntitySpawner(block.getLevel().getChunk((int) block.x >> 4, (int) block.z >> 4), nbt);
+            entitySpawner.spawnToAll();
 
             if (!player.isCreative()) {
                 player.getInventory().decreaseCount(player.getInventory().getHeldItemIndex());
