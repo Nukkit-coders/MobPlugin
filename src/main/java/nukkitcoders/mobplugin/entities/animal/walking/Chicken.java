@@ -70,12 +70,14 @@ public class Chicken extends WalkingAnimal {
     @Override
     public boolean entityBaseTick(int tickDiff) {
         boolean hasUpdate = super.entityBaseTick(tickDiff);
-        if (this.EggLayTime > 0) {
-            EggLayTime -= tickDiff;
-        } else {
-            this.level.dropItem(this, Item.get(Item.EGG, 0, 1));
-            this.level.addLevelSoundEvent(this, LevelSoundEventPacket.SOUND_PLOP);
-            this.EggLayTime = this.getRandomEggLayTime();
+        if (!this.isBaby() && !this.isChickenJockey()) {
+            if (this.EggLayTime > 0) {
+                EggLayTime -= tickDiff;
+            } else {
+                this.level.dropItem(this, Item.get(Item.EGG, 0, 1));
+                this.level.addLevelSoundEvent(this, LevelSoundEventPacket.SOUND_PLOP);
+                this.EggLayTime = this.getRandomEggLayTime();
+            }
         }
         return hasUpdate;
     }
