@@ -131,14 +131,19 @@ public class MobPlugin extends PluginBase implements Listener {
             switch (args[0].toLowerCase()) {
                 case "spawn":
                     if (args.length == 1 || (args.length == 2 && !(sender instanceof Player))) {
-                        sender.sendMessage("Usage: /mob spawn <entity> <opt:player>");
+                        sender.sendMessage("Usage: /mob spawn <entity> <opt:player> or <pos:x,y,z>");
                         break;
                     }
 
                     String mob = args[1];
                     Player playerThatSpawns;
+                    boolean toPos = false;
 
-                    if (args.length == 3) {
+                    if (args.length == 3 && args[2].contains(",")) {
+                       toPos = true;
+                    }
+
+                    if (args.length == 3 && toPos == false) {
                         playerThatSpawns = this.getServer().getPlayer(args[2]);
                     } else {
                         playerThatSpawns = (Player) sender;
@@ -147,10 +152,30 @@ public class MobPlugin extends PluginBase implements Listener {
                     if (playerThatSpawns != null) {
                         Position pos = playerThatSpawns.getPosition();
 
+                        if (toPos == true) {
+                          // specifying a position instead of a player
+                          String[] arg = args[2].split(",");
+                          playerThatSpawns = (Player) sender;
+
+                          Position newpos = new Position
+                          (
+                            Double.parseDouble(arg[0]), // x
+                            Double.parseDouble(arg[1]), // y
+                            Double.parseDouble(arg[2]), // z
+                            playerThatSpawns.getPosition().level
+                          );
+
+                          pos = newpos;
+                        }
+
                         Entity ent;
                         if ((ent = Entity.createEntity(mob, pos)) != null) {
                             ent.spawnToAll();
-                            sender.sendMessage("Spawned " + mob + " to " + playerThatSpawns.getName());
+                            if (toPos == true) {
+                              sender.sendMessage("Spawned " + mob + " to " + args[2]);
+                            } else {
+                              sender.sendMessage("Spawned " + mob + " to " + playerThatSpawns.getName());
+                            }
                         } else {
                             sender.sendMessage("Unable to spawn " + mob);
                         }
