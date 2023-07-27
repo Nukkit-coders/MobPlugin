@@ -82,7 +82,25 @@ public class Sheep extends WalkingAnimal {
     @Override
     public boolean onInteract(Player player, Item item, Vector3 clickedPos) {
         if (item.getId() == Item.DYE) {
-            this.setColor(((ItemDye) item).getDyeColor().getWoolData());
+            switch (item.getDamage()) {
+                case ItemDye.BONE_MEAL:
+                case ItemDye.LAPIS_LAZULI:
+                    return false;
+                case ItemDye.WHITE_NEW:
+                    this.setColor(DyeColor.WHITE.getWoolData());
+                    break;
+                case ItemDye.BLUE_NEW:
+                    this.setColor(DyeColor.BLUE.getWoolData());
+                    break;
+                case ItemDye.BROWN_NEW:
+                    this.setColor(DyeColor.BROWN.getWoolData());
+                    break;
+                case ItemDye.BLACK_NEW:
+                    this.setColor(DyeColor.BLACK.getWoolData());
+                    break;
+                default:
+                    this.setColor(((ItemDye) item).getDyeColor().getWoolData());
+            }
             return true;
         } else if (item.getId() == Item.WHEAT && !this.isBaby() && !this.isInLoveCooldown()) {
             player.getInventory().decreaseCount(player.getInventory().getHeldItemIndex());
