@@ -42,8 +42,6 @@ public class Wolf extends TameableMonster {
     private boolean angry;
     private int angryDuration;
     
-    protected int inLoveTicks = 0;
-    
     private DyeColor collarColor = DyeColor.RED;
     
     private int afterInWater = -1;
@@ -201,7 +199,7 @@ public class Wolf extends TameableMonster {
         } else if (this.isBreedingItem(item) || healable != 0) {
             this.getLevel().addSound(this, Sound.RANDOM_EAT);
             this.getLevel().addParticle(new ItemBreakParticle(this.add(0, this.getMountedYOffset(), 0), Item.get(item.getId(), 0, 1)));
-            this.setInLove();
+            if (!this.isInLoveCooldown()) this.setInLove();
             
             if (healable != 0) {
                 this.setHealth(Math.max(this.getMaxHealth(), this.getHealth() + healable));
@@ -276,15 +274,6 @@ public class Wolf extends TameableMonster {
             this.angryDuration--;
         }
         
-        if (this.isInLove()) {
-            this.inLoveTicks -= tickDiff;
-            if (this.age % 20 == 0) {
-                for (int i = 0; i < 3; i++) {
-                    this.getLevel().addParticle(new HeartParticle(this.add(Utils.rand(-1.0,1.0), this.getMountedYOffset() + Utils.rand(-1.0,1.0), Utils.rand(-1.0, 1.0))));
-                }
-            }
-        }
-        
         if (Utils.entityInsideWaterFast(this)) {
             afterInWater = 0;
         } else if (afterInWater != -1) {
@@ -303,15 +292,6 @@ public class Wolf extends TameableMonster {
         }
         
         return hasUpdate;
-    }
-    
-    public void setInLove() {
-        this.inLoveTicks = 600;
-        //this.setDataFlag(DATA_FLAGS, DATA_FLAG_INLOVE);
-    }
-    
-    public boolean isInLove() {
-        return inLoveTicks > 0;
     }
     
     @Override
