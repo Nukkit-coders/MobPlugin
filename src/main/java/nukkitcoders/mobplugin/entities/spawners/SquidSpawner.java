@@ -30,7 +30,9 @@ public class SquidSpawner extends AbstractEntitySpawner {
                     if (b == Block.WATER || b == Block.STILL_WATER) {
                         for (int i = 0; i < Utils.rand(2, 4); i++) {
                             BaseEntity entity = this.spawnTask.createEntity("Squid", pos.add(0, -1, 0));
-                            if (entity == null) return;
+                            if (entity == null) {
+                                return;
+                            }
                             if (Utils.rand(1, 20) == 1) {
                                 entity.setBaby(true);
                             }

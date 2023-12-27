@@ -12,7 +12,6 @@ import cn.nukkit.item.ItemDye;
 import cn.nukkit.item.ItemID;
 import cn.nukkit.level.Sound;
 import cn.nukkit.level.format.FullChunk;
-import cn.nukkit.level.particle.HeartParticle;
 import cn.nukkit.level.particle.ItemBreakParticle;
 import cn.nukkit.math.Vector3;
 import cn.nukkit.nbt.tag.CompoundTag;
@@ -199,7 +198,9 @@ public class Wolf extends TameableMonster {
         } else if (this.isBreedingItem(item) || healable != 0) {
             this.getLevel().addSound(this, Sound.RANDOM_EAT);
             this.getLevel().addParticle(new ItemBreakParticle(this.add(0, this.getMountedYOffset(), 0), Item.get(item.getId(), 0, 1)));
-            if (!this.isInLoveCooldown()) this.setInLove();
+            if (!this.isInLoveCooldown()) {
+                this.setInLove();
+            }
             
             if (healable != 0) {
                 this.setHealth(Math.max(this.getMaxHealth(), this.getHealth() + healable));
@@ -331,7 +332,9 @@ public class Wolf extends TameableMonster {
             this.stayTime = 0;
             this.moveTime = 0;
             this.followTarget = creature;
-            if (this.route == null && this.passengers.isEmpty()) this.target = creature;
+            if (this.route == null && this.passengers.isEmpty()) {
+                this.target = creature;
+            }
         }
 
         if (this.target != null) {
@@ -373,7 +376,9 @@ public class Wolf extends TameableMonster {
     
     @Override
     public boolean canDespawn() {
-        if (this.hasOwner(false)) return false;
+        if (this.hasOwner(false)) {
+            return false;
+        }
         return super.canDespawn();
     }
     

@@ -20,7 +20,9 @@ public class ZombiePigmanSpawner extends AbstractEntitySpawner {
         if (level.getBlockLightAt((int) pos.x, (int) pos.y, (int) pos.z) <= 7) {
             for (int i = 0; i < Utils.rand(2, 4); i++) {
                 BaseEntity entity = this.spawnTask.createEntity("ZombiePigman", pos.add(0.5, 1, 0.5));
-                if (entity == null) return;
+                if (entity == null) {
+                    return;
+                }
                 if (Utils.rand(1, 20) == 1) {
                     entity.setBaby(true);
                 }

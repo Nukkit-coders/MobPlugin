@@ -10,6 +10,7 @@ import cn.nukkit.level.particle.ItemBreakParticle;
 import cn.nukkit.math.Vector3;
 import cn.nukkit.nbt.tag.CompoundTag;
 import cn.nukkit.network.protocol.LevelSoundEventPacket;
+import cn.nukkit.network.protocol.MoveEntityAbsolutePacket;
 import nukkitcoders.mobplugin.entities.animal.WalkingAnimal;
 import nukkitcoders.mobplugin.utils.Utils;
 
@@ -165,5 +166,26 @@ public class Chicken extends WalkingAnimal {
 
     public void setChickenJockey(boolean chickenJockey) {
         isChickenJockey = chickenJockey;
+    }
+
+    private boolean lastMoveOnGround;
+
+    @Override
+    public void addMovement(double x, double y, double z, double yaw, double pitch, double headYaw) {
+        MoveEntityAbsolutePacket pk = new MoveEntityAbsolutePacket();
+        pk.eid = this.getId();
+        pk.x = x;
+        pk.y = y;
+        pk.z = z;
+        pk.yaw = yaw;
+        pk.headYaw = headYaw;
+        pk.pitch = pitch;
+
+        pk.onGround = this.onGround || this.lastMoveOnGround;
+        this.lastMoveOnGround = this.onGround;
+
+        for (Player p : this.getViewers().values()) {
+            p.dataPacket(pk);
+        }
     }
 }

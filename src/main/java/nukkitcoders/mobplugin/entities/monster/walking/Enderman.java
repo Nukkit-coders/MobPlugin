@@ -206,7 +206,9 @@ public class Enderman extends WalkingMonster {
 
     @Override
     public boolean targetOption(EntityCreature creature, double distance) {
-        if (!isAngry()) return false;
+        if (!isAngry()) {
+            return false;
+        }
         if (creature instanceof Player) {
             Player player = (Player) creature;
             return !player.closed && player.spawned && player.isAlive() && (player.isSurvival() || player.isAdventure()) && distance <= 1024;

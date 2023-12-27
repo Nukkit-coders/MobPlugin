@@ -14,6 +14,7 @@ import nukkitcoders.mobplugin.entities.animal.walking.Llama;
 import nukkitcoders.mobplugin.entities.animal.walking.Pig;
 import nukkitcoders.mobplugin.entities.animal.walking.SkeletonHorse;
 import nukkitcoders.mobplugin.entities.monster.walking.Drowned;
+import nukkitcoders.mobplugin.entities.monster.walking.IronGolem;
 import nukkitcoders.mobplugin.route.RouteFinder;
 import nukkitcoders.mobplugin.runnable.RouteFinderSearchTask;
 import nukkitcoders.mobplugin.utils.FastMathLite;
@@ -64,7 +65,9 @@ public abstract class WalkingEntity extends BaseEntity {
             this.stayTime = 0;
             this.moveTime = 0;
             this.followTarget = creature;
-            if (this.route == null && this.passengers.isEmpty()) this.target = creature;
+            if (this.route == null && this.passengers.isEmpty()) {
+                this.target = creature;
+            }
         }
 
         if (this.followTarget != null) {
@@ -96,9 +99,9 @@ public abstract class WalkingEntity extends BaseEntity {
     protected boolean checkJump(double dx, double dz) {
         if (this.motionY == this.getGravity() * 2) {
             return this.canSwimIn(level.getBlockIdAt(NukkitMath.floorDouble(this.x), (int) this.y, NukkitMath.floorDouble(this.z)));
-        } else if (!(this instanceof SkeletonHorse)) {
+        } else {
             if (this.canSwimIn(level.getBlockIdAt(NukkitMath.floorDouble(this.x), (int) (this.y + 0.8), NukkitMath.floorDouble(this.z)))) {
-                if (!(this instanceof Drowned) || this.target == null) {
+                if (!(this instanceof Drowned || this instanceof IronGolem || this instanceof SkeletonHorse) || this.target == null) {
                     this.motionY = this.getGravity() * 2;
                 }
                 return true;
@@ -161,8 +164,12 @@ public abstract class WalkingEntity extends BaseEntity {
             Block levelBlock = getLevelBlock();
             boolean inWater = levelBlock.getId() == 8 || levelBlock.getId() == 9;
             int downId = level.getBlockIdAt(getFloorX(), getFloorY() - 1, getFloorZ());
-            if (inWater && (downId == 0 || downId == 8 || downId == 9 || downId == BlockID.LAVA || downId == BlockID.STILL_LAVA || downId == BlockID.SIGN_POST || downId == BlockID.WALL_SIGN)) onGround = false;
-            if (downId == 0 || downId == BlockID.SIGN_POST || downId == BlockID.WALL_SIGN) onGround = false;
+            if (inWater && (downId == 0 || downId == 8 || downId == 9 || downId == BlockID.LAVA || downId == BlockID.STILL_LAVA || downId == BlockID.SIGN_POST || downId == BlockID.WALL_SIGN)) {
+                onGround = false;
+            }
+            if (downId == 0 || downId == BlockID.SIGN_POST || downId == BlockID.WALL_SIGN) {
+                onGround = false;
+            }
             if (this.followTarget != null && !this.followTarget.closed && this.followTarget.isAlive() && this.target != null) {
                 double x = this.target.x - this.x;
                 double z = this.target.z - this.z;
@@ -180,14 +187,17 @@ public abstract class WalkingEntity extends BaseEntity {
                     } else if (levelBlock.getId() == 9) {
                         this.motionX = this.getSpeed() * moveMultiplier * 0.05 * (x / diff);
                         this.motionZ = this.getSpeed() * moveMultiplier * 0.05 * (z / diff);
-                        if (!(this instanceof Drowned))
+                        if (!(this instanceof Drowned || this instanceof IronGolem || this instanceof SkeletonHorse)) {
                             this.level.addParticle(new BubbleParticle(this.add(Utils.rand(-2.0, 2.0), Utils.rand(-0.5, 0), Utils.rand(-2.0, 2.0))));
+                        }
                     } else {
                         this.motionX = this.getSpeed() * moveMultiplier * 0.1 * (x / diff);
                         this.motionZ = this.getSpeed() * moveMultiplier * 0.1 * (z / diff);
                     }
                 }
-                if ((this.passengers.isEmpty() || this instanceof Llama || this instanceof Pig) && (this.stayTime <= 0 || Utils.rand()) && diff != 0) this.yaw = Math.toDegrees(-FastMathLite.atan2(x / diff, z / diff));
+                if ((this.passengers.isEmpty() || this instanceof Llama || this instanceof Pig) && (this.stayTime <= 0 || Utils.rand()) && diff != 0) {
+                    this.yaw = Math.toDegrees(-FastMathLite.atan2(x / diff, z / diff));
+                }
             }
 
             this.checkTarget();
@@ -209,7 +219,7 @@ public abstract class WalkingEntity extends BaseEntity {
                     } else if (levelBlock.getId() == 9) {
                         this.motionX = this.getSpeed() * moveMultiplier * 0.05 * (x / diff);
                         this.motionZ = this.getSpeed() * moveMultiplier * 0.05 * (z / diff);
-                        if (!(this instanceof Drowned)) {
+                        if (!(this instanceof Drowned || this instanceof IronGolem || this instanceof SkeletonHorse)) {
                             this.level.addParticle(new BubbleParticle(this.add(Utils.rand(-2.0, 2.0), Utils.rand(-0.5, 0), Utils.rand(-2.0, 2.0))));
                         } else if (this.followTarget != null) {
                             double y = this.followTarget.y - this.y;
@@ -220,7 +230,9 @@ public abstract class WalkingEntity extends BaseEntity {
                         this.motionZ = this.getSpeed() * moveMultiplier * 0.15 * (z / diff);
                     }
                 }
-                if (!distance && (this.passengers.isEmpty() || this instanceof Llama || this instanceof Pig) && (this.stayTime <= 0 || Utils.rand()) && diff != 0) this.yaw = Math.toDegrees(-FastMathLite.atan2(x / diff, z / diff));
+                if (!distance && (this.passengers.isEmpty() || this instanceof Llama || this instanceof Pig) && (this.stayTime <= 0 || Utils.rand()) && diff != 0) {
+                    this.yaw = Math.toDegrees(-FastMathLite.atan2(x / diff, z / diff));
+                }
             }
 
             double dx = this.motionX;
@@ -247,7 +259,7 @@ public abstract class WalkingEntity extends BaseEntity {
                         this.motionY -= this.getGravity();
                     }
                 } else {
-                    if (this instanceof Drowned && inWater && this.motionY < 0) {
+                    if ((this instanceof Drowned || this instanceof IronGolem || this instanceof SkeletonHorse) && inWater && this.motionY < 0) {
                         this.motionY = this.getGravity() * -0.3;
                         this.stayTime = 40;
                     } else {

@@ -84,7 +84,10 @@ public class MobPlugin extends PluginBase implements Listener {
 
     @Override
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
-        if (!sender.hasPermission("mobplugin.command")) return false;
+        if (!sender.hasPermission("mobplugin.command")) {
+            return false;
+        }
+
         if (cmd.getName().equals("summon")) {
             if (args.length == 0 || (args.length == 1 && !(sender instanceof Player))) {
                 return false;
@@ -298,7 +301,7 @@ public class MobPlugin extends PluginBase implements Listener {
 
     public static boolean shouldMobBurn(Level level, BaseEntity entity) {
         int time = level.getTime() % Level.TIME_FULL;
-        return !entity.isOnFire() && !level.isRaining() && !entity.isBaby() && (time < 12567 || time > 23450) && !Utils.entityInsideWaterFast(entity) && level.canBlockSeeSky(entity);
+        return !entity.isOnFire() && !level.isRaining() && (time < 12567 || time > 23450) && !Utils.entityInsideWaterFast(entity) && level.canBlockSeeSky(entity);
     }
 
     public static boolean isEntityCreationAllowed(Level level) {

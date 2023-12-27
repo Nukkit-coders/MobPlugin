@@ -3,6 +3,7 @@ package nukkitcoders.mobplugin.entities;
 import cn.nukkit.block.Block;
 import cn.nukkit.entity.Entity;
 import cn.nukkit.entity.EntityCreature;
+import cn.nukkit.event.entity.EntityDamageEvent;
 import cn.nukkit.level.format.FullChunk;
 import cn.nukkit.math.NukkitMath;
 import cn.nukkit.math.Vector2;
@@ -12,6 +13,8 @@ import nukkitcoders.mobplugin.utils.FastMathLite;
 import nukkitcoders.mobplugin.utils.Utils;
 
 public abstract class SwimmingEntity extends BaseEntity {
+
+    private boolean inWaterCached = true;
 
     public SwimmingEntity(FullChunk chunk, CompoundTag nbt) {
         super(chunk, nbt);
@@ -102,7 +105,9 @@ public abstract class SwimmingEntity extends BaseEntity {
                     this.motionX = this.getSpeed() * 0.1 * (x / diff);
                     this.motionZ = this.getSpeed() * 0.1 * (z / diff);
                 }
-                if ((this.stayTime <= 0 || Utils.rand()) && diff != 0) this.yaw = (FastMathLite.toDegrees(-FastMathLite.atan2(x / diff, z / diff)));
+                if ((this.stayTime <= 0 || Utils.rand()) && diff != 0) {
+                    this.yaw = (FastMathLite.toDegrees(-FastMathLite.atan2(x / diff, z / diff)));
+                }
                 return this.followTarget;
             }
 
@@ -120,13 +125,16 @@ public abstract class SwimmingEntity extends BaseEntity {
                     this.motionX = this.getSpeed() * 0.15 * (x / diff);
                     this.motionZ = this.getSpeed() * 0.15 * (z / diff);
                 }
-                if ((this.stayTime <= 0 || Utils.rand()) && diff != 0) this.yaw = (FastMathLite.toDegrees(-FastMathLite.atan2(x / diff, z / diff)));
+                if ((this.stayTime <= 0 || Utils.rand()) && diff != 0) {
+                    this.yaw = (FastMathLite.toDegrees(-FastMathLite.atan2(x / diff, z / diff)));
+                }
             }
 
             double dx = this.motionX;
             double dz = this.motionZ;
 
             boolean inWater = Utils.entityInsideWaterFast(this);
+            this.inWaterCached = inWater;
             if (inWater && (this.motionX > 0 || this.motionZ > 0)) {
                 this.motionY = Utils.rand(-0.12, 0.12);
             } else if (!this.isOnGround() && !inWater) {
@@ -162,8 +170,19 @@ public abstract class SwimmingEntity extends BaseEntity {
 
     @Override
     public boolean entityBaseTick(int tickDiff) {
-        boolean hasUpdate = super.entityBaseTick(tickDiff);
-        this.setAirTicks(300);
-        return hasUpdate;
+        boolean result = super.entityBaseTick(tickDiff);
+        if (this.inWaterCached) {
+            this.setAirTicks(300);
+        } else {
+            int airTicks = getAirTicks() - tickDiff * 6;
+
+            if (airTicks <= -20) {
+                airTicks = 0;
+                this.attack(new EntityDamageEvent(this, EntityDamageEvent.DamageCause.SUFFOCATION, 2));
+            }
+
+            setAirTicks(airTicks);
+        }
+        return result;
     }
 }

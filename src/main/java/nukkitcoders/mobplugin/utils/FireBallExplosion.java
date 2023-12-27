@@ -49,7 +49,9 @@ public class FireBallExplosion extends Explosion {
             this.doesDamage = false;
             return true;
         }
-        if (this.size < 0.1) return false;
+        if (this.size < 0.1) {
+            return false;
+        }
         Vector3 vector = new Vector3(0, 0, 0);
         Vector3 vBlock = new Vector3(0, 0, 0);
         for (int i = 0; i < 16; ++i) {

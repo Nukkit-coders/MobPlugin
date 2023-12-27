@@ -156,9 +156,15 @@ public class MagmaCube extends JumpingMonster {
 
     @Override
     public int getKillExperience() {
-        if (this.size == SIZE_BIG) return 4;
-        if (this.size == SIZE_MEDIUM) return 2;
-        if (this.size == SIZE_SMALL) return 1;
+        if (this.size == SIZE_BIG) {
+            return 4;
+        }
+        if (this.size == SIZE_MEDIUM) {
+            return 2;
+        }
+        if (this.size == SIZE_SMALL) {
+            return 1;
+        }
         return 0;
     }
 

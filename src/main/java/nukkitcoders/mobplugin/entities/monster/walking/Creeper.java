@@ -69,7 +69,9 @@ public class Creeper extends WalkingMonster implements EntityExplosive {
     }
 
     public void explode() {
-        if (this.closed) return;
+        if (this.closed) {
+            return;
+        }
 
         EntityExplosionPrimeEvent ev = new EntityExplosionPrimeEvent(this, this.isPowered() ? 6 : 3);
 

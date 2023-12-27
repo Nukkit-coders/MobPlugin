@@ -19,7 +19,9 @@ public class RouteFinderThreadPool {
             );
 
     public static void executeRouteFinderThread(RouteFinderSearchTask t) {
-        if (!executor.isShutdown() && !executor.isTerminating()) executor.execute(t);
+        if (!executor.isShutdown() && !executor.isTerminating()) {
+            executor.execute(t);
+        }
     }
 
     public static void shutDownNow() {

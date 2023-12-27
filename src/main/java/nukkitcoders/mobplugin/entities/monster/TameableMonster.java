@@ -16,7 +16,7 @@ public abstract class TameableMonster extends WalkingMonster implements Tameable
 
     private String ownerUUID = "";
 
-    private boolean sitting = false;
+    private boolean sitting;
 
     public TameableMonster(FullChunk chunk, CompoundTag nbt) {
         super(chunk, nbt);

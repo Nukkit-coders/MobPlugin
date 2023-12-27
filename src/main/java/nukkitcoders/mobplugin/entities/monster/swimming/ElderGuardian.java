@@ -8,6 +8,7 @@ import cn.nukkit.event.entity.EntityDamageByEntityEvent;
 import cn.nukkit.item.Item;
 import cn.nukkit.level.format.FullChunk;
 import cn.nukkit.nbt.tag.CompoundTag;
+import cn.nukkit.potion.Effect;
 import nukkitcoders.mobplugin.entities.monster.SwimmingMonster;
 import nukkitcoders.mobplugin.utils.Utils;
 
@@ -77,5 +78,18 @@ public class ElderGuardian extends SwimmingMonster {
     @Override
     public String getName() {
         return this.hasCustomName() ? this.getNameTag() : "Elder Guardian";
+    }
+
+    @Override
+    public boolean entityBaseTick(int tickDiff) {
+        boolean result = super.entityBaseTick(tickDiff);
+        if (!this.closed && this.ticksLived % 1200 == 0 && this.isAlive()) {
+            for (Player p : this.level.getPlayers().values()) {
+                if (p.distanceSquared(this) < 2500 && !p.hasEffect(Effect.MINING_FATIGUE)) {
+                    p.addEffect(Effect.getEffect(Effect.MINING_FATIGUE).setAmplifier(2).setDuration(6000));
+                }
+            }
+        }
+        return result;
     }
 }

@@ -1,6 +1,8 @@
 package nukkitcoders.mobplugin.entities.monster.walking;
 
 import cn.nukkit.Player;
+import cn.nukkit.Server;
+import cn.nukkit.entity.Attribute;
 import cn.nukkit.entity.Entity;
 import cn.nukkit.entity.EntityCreature;
 import cn.nukkit.entity.passive.EntityWolf;
@@ -9,6 +11,7 @@ import cn.nukkit.event.entity.EntityDamageEvent;
 import cn.nukkit.item.Item;
 import cn.nukkit.level.format.FullChunk;
 import cn.nukkit.nbt.tag.CompoundTag;
+import cn.nukkit.network.protocol.UpdateAttributesPacket;
 import nukkitcoders.mobplugin.entities.monster.WalkingMonster;
 import nukkitcoders.mobplugin.utils.Utils;
 
@@ -83,7 +86,9 @@ public class IronGolem extends WalkingMonster {
         List<Item> drops = new ArrayList<>();
         drops.add(Item.get(Item.IRON_INGOT, 0, Utils.rand(3, 5)));
         int c2 = Utils.rand(0, 2);
-        if (c2 > 0) drops.add(Item.get(Item.POPPY, 0, c2));
+        if (c2 > 0) {
+            drops.add(Item.get(Item.POPPY, 0, c2));
+        }
         return drops.toArray(new Item[0]);
     }
 
@@ -117,5 +122,29 @@ public class IronGolem extends WalkingMonster {
     @Override
     public boolean canTarget(Entity entity) {
         return entity.getId() == this.isAngryTo;
+    }
+
+    @Override
+    public void spawnTo(Player player) {
+        super.spawnTo(player);
+
+        this.sendHealth();
+    }
+
+    @Override
+    public void setHealth(float health) {
+        super.setHealth(health);
+
+        this.sendHealth();
+    }
+
+    private void sendHealth() {
+        if (this.isAlive()) {
+            UpdateAttributesPacket pk = new UpdateAttributesPacket();
+            int max = this.getMaxHealth();
+            pk.entries = new Attribute[]{Attribute.getAttribute(Attribute.MAX_HEALTH).setMaxValue(max).setValue(this.health < max ? this.health : max)};
+            pk.entityId = this.id;
+            Server.broadcastPacket(this.getViewers().values(), pk);
+        }
     }
 }

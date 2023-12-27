@@ -5,7 +5,7 @@ jobs:
     working_directory: ~/MobPlugin
 
     docker:
-      - image: circleci/openjdk:8-jdk-browsers
+      - image: cimg/openjdk:8.0
 
     steps:
 
@@ -22,6 +22,3 @@ jobs:
           key: MobPlugin-{{ checksum "pom.xml" }}
       
       - run: mvn clean package
-
-      - store_artifacts:
-          path: target/MobPlugin-1.21.5.jar

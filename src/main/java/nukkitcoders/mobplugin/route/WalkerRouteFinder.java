@@ -115,13 +115,17 @@ public class WalkerRouteFinder extends SimpleRouteFinder {
         if (limit > 0) {
             for (int y = vector3.getFloorY(); y >= vector3.getFloorY() - limit; y--) {
                 Block block = this.level.getBlock(vector3.getFloorX(), y, vector3.getFloorZ(), false);
-                if (isWalkable(block) && level.getBlock(block.add(0, 1, 0), false).getId() == Block.AIR) return block;
+                if (isWalkable(block) && level.getBlock(block.add(0, 1, 0), false).getId() == Block.AIR) {
+                    return block;
+                }
             }
             return null;
         }
         for (int y = vector3.getFloorY(); y >= 0; y--) {
             Block block = this.level.getBlock(vector3.getFloorX(), y, vector3.getFloorZ(), false);
-            if (isWalkable(block) && level.getBlock(block.add(0, 1, 0), false).getId() == Block.AIR) return block;
+            if (isWalkable(block) && level.getBlock(block.add(0, 1, 0), false).getId() == Block.AIR) {
+                return block;
+            }
         }
         return null;
     }
@@ -130,8 +134,7 @@ public class WalkerRouteFinder extends SimpleRouteFinder {
         return !(block.getId() == Block.LAVA || block.getId() == Block.STILL_LAVA || block.getId() == Block.CACTUS);
     }
 
-    private boolean isWalkable(Vector3 vector3) {
-        Block block = level.getBlock(vector3, false);
+    private boolean isWalkable(Block block) {
         return !block.canPassThrough() && canWalkOn(block);
     }
 
@@ -326,8 +329,12 @@ public class WalkerRouteFinder extends SimpleRouteFinder {
     }
 
     private boolean hasBarrier(Vector3 pos1, Vector3 pos2) {
-        if (pos1.equals(pos2)) return false;
-        if (pos1.getFloorY() != pos2.getFloorY()) return true;
+        if (pos1.equals(pos2)) {
+            return false;
+        }
+        if (pos1.getFloorY() != pos2.getFloorY()) {
+            return true;
+        }
         boolean traverseDirection = Math.abs(pos1.getX() - pos2.getX()) > Math.abs(pos1.getZ() - pos2.getZ());
         if (traverseDirection) {
             double loopStart = Math.min(pos1.getX(), pos2.getX());
@@ -335,8 +342,9 @@ public class WalkerRouteFinder extends SimpleRouteFinder {
             ArrayList<Vector3> list = new ArrayList<>();
             for (double i = Math.ceil(loopStart); i <= Math.floor(loopEnd); i += 1.0) {
                 double result;
-                if ((result = Utils.calLinearFunction(pos1, pos2, i, Utils.ACCORDING_X_OBTAIN_Y)) != Double.MAX_VALUE)
+                if ((result = Utils.calLinearFunction(pos1, pos2, i, Utils.ACCORDING_X_OBTAIN_Y)) != Double.MAX_VALUE) {
                     list.add(new Vector3(i, pos1.getY(), result));
+                }
             }
             return hasBlocksAround(list);
         } else {
@@ -345,8 +353,9 @@ public class WalkerRouteFinder extends SimpleRouteFinder {
             ArrayList<Vector3> list = new ArrayList<>();
             for (double i = Math.ceil(loopStart); i <= Math.floor(loopEnd); i += 1.0) {
                 double result;
-                if ((result = Utils.calLinearFunction(pos1, pos2, i, Utils.ACCORDING_Y_OBTAIN_X)) != Double.MAX_VALUE)
+                if ((result = Utils.calLinearFunction(pos1, pos2, i, Utils.ACCORDING_Y_OBTAIN_X)) != Double.MAX_VALUE) {
                     list.add(new Vector3(result, pos1.getY(), i));
+                }
             }
 
             return hasBlocksAround(list);
@@ -360,7 +369,9 @@ public class WalkerRouteFinder extends SimpleRouteFinder {
         double height = this.entity.getHeight() * this.entity.getScale();
         for (Vector3 vector3 : list) {
             AxisAlignedBB bb = new SimpleAxisAlignedBB(vector3.getX() - radius, vector3.getY(), vector3.getZ() - radius, vector3.getX() + radius, vector3.getY() + height, vector3.getZ() + radius);
-            if (Utils.hasCollisionBlocks(level, bb)) return true;
+            if (Utils.hasCollisionBlocks(level, bb)) {
+                return true;
+            }
 
             boolean xIsInt = vector3.getX() % 1 == 0;
             boolean zIsInt = vector3.getZ() % 1 == 0;
@@ -368,15 +379,23 @@ public class WalkerRouteFinder extends SimpleRouteFinder {
                 if (level.getBlock(new Vector3(vector3.getX(), vector3.getY() - 1, vector3.getZ()), false).canPassThrough() ||
                         level.getBlock(new Vector3(vector3.getX() - 1, vector3.getY() - 1, vector3.getZ()), false).canPassThrough() ||
                         level.getBlock(new Vector3(vector3.getX() - 1, vector3.getY() - 1, vector3.getZ() - 1), false).canPassThrough() ||
-                        level.getBlock(new Vector3(vector3.getX(), vector3.getY() - 1, vector3.getZ() - 1), false).canPassThrough()) return true;
+                        level.getBlock(new Vector3(vector3.getX(), vector3.getY() - 1, vector3.getZ() - 1), false).canPassThrough()) {
+                    return true;
+                }
             } else if (xIsInt) {
                 if (level.getBlock(new Vector3(vector3.getX(), vector3.getY() - 1, vector3.getZ()), false).canPassThrough() ||
-                        level.getBlock(new Vector3(vector3.getX() - 1, vector3.getY() - 1, vector3.getZ()), false).canPassThrough()) return true;
+                        level.getBlock(new Vector3(vector3.getX() - 1, vector3.getY() - 1, vector3.getZ()), false).canPassThrough()) {
+                    return true;
+                }
             } else if (zIsInt) {
                 if (level.getBlock(new Vector3(vector3.getX(), vector3.getY() - 1, vector3.getZ()), false).canPassThrough() ||
-                        level.getBlock(new Vector3(vector3.getX(), vector3.getY() - 1, vector3.getZ() - 1), false).canPassThrough()) return true;
+                        level.getBlock(new Vector3(vector3.getX(), vector3.getY() - 1, vector3.getZ() - 1), false).canPassThrough()) {
+                    return true;
+                }
             } else {
-                if (level.getBlock(new Vector3(vector3.getX(), vector3.getY() - 1, vector3.getZ()), false).canPassThrough()) return true;
+                if (level.getBlock(new Vector3(vector3.getX(), vector3.getY() - 1, vector3.getZ()), false).canPassThrough()) {
+                    return true;
+                }
             }
         }
         return false;

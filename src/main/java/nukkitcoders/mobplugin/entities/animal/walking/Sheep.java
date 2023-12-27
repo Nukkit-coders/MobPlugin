@@ -142,7 +142,9 @@ public class Sheep extends WalkingAnimal {
         List<Item> drops = new ArrayList<>();
 
         if (!this.isBaby()) {
-            if (!sheared) drops.add(Item.get(Item.WOOL, this.getColor(), 1));
+            if (!sheared) {
+                drops.add(Item.get(Item.WOOL, this.getColor(), 1));
+            }
             drops.add(Item.get(this.isOnFire() ? Item.COOKED_MUTTON : Item.RAW_MUTTON, 0, Utils.rand(1, 2)));
         }
 
@@ -163,12 +165,19 @@ public class Sheep extends WalkingAnimal {
     private int randomColor() {
         int rand = Utils.rand(1, 200);
 
-        if (rand == 1) return DyeColor.PINK.getWoolData();
-        else if (rand < 8) return DyeColor.BROWN.getWoolData();
-        else if (rand < 18) return DyeColor.GRAY.getWoolData();
-        else if (rand < 28) return DyeColor.LIGHT_GRAY.getWoolData();
-        else if (rand < 38) return DyeColor.BLACK.getWoolData();
-        else return DyeColor.WHITE.getWoolData();
+        if (rand == 1) {
+            return DyeColor.PINK.getWoolData();
+        } else if (rand < 8) {
+            return DyeColor.BROWN.getWoolData();
+        } else if (rand < 18) {
+            return DyeColor.GRAY.getWoolData();
+        } else if (rand < 28) {
+            return DyeColor.LIGHT_GRAY.getWoolData();
+        } else if (rand < 38) {
+            return DyeColor.BLACK.getWoolData();
+        } else {
+            return DyeColor.WHITE.getWoolData();
+        }
     }
 
     @Override

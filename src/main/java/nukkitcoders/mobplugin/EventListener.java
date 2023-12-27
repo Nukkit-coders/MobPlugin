@@ -65,7 +65,9 @@ public class EventListener implements Listener {
             this.handleAttackedEntityAngry(ev.getEntity());
             if (ev.getEntity() instanceof BaseEntity && ev.getEntity().getLevel().getGameRules().getBoolean(GameRule.DO_MOB_LOOT)) {
                 BaseEntity baseEntity = (BaseEntity) ev.getEntity();
-                if (!(baseEntity.getLastDamageCause() instanceof EntityDamageByEntityEvent)) return;
+                if (!(baseEntity.getLastDamageCause() instanceof EntityDamageByEntityEvent)) {
+                    return;
+                }
                 Entity damager = ((EntityDamageByEntityEvent) baseEntity.getLastDamageCause()).getDamager();
                 if (damager instanceof Creeper && damager != baseEntity && baseEntity.getLastDamageCause().getCause() == EntityDamageEvent.DamageCause.ENTITY_EXPLOSION) {
                     if (((Creeper) damager).isPowered()) {
@@ -87,14 +89,20 @@ public class EventListener implements Listener {
     }
 
     private void handleExperienceOrb(Entity entity) {
-        if (!(entity instanceof BaseEntity)) return;
+        if (!(entity instanceof BaseEntity)) {
+            return;
+        }
 
         BaseEntity baseEntity = (BaseEntity) entity;
 
-        if (!(baseEntity.getLastDamageCause() instanceof EntityDamageByEntityEvent)) return;
+        if (!(baseEntity.getLastDamageCause() instanceof EntityDamageByEntityEvent)) {
+            return;
+        }
 
         Entity damager = ((EntityDamageByEntityEvent) baseEntity.getLastDamageCause()).getDamager();
-        if (!(damager instanceof Player)) return;
+        if (!(damager instanceof Player)) {
+            return;
+        }
         int killExperience = baseEntity.getKillExperience();
         if (killExperience > 0) {
             if (MobPlugin.getInstance().config.noXpOrbs) {
@@ -106,7 +114,9 @@ public class EventListener implements Listener {
     }
 
     private void handleTamedEntityDeathMessage(Entity entity) {
-        if (!(entity instanceof BaseEntity)) return;
+        if (!(entity instanceof BaseEntity)) {
+            return;
+        }
 
         BaseEntity baseEntity = (BaseEntity) entity;
 
@@ -147,7 +157,9 @@ public class EventListener implements Listener {
     }
 
     private void handleAttackedEntityAngry(Entity entity) {
-        if (!(entity.getLastDamageCause() instanceof EntityDamageByEntityEvent)) return;
+        if (!(entity.getLastDamageCause() instanceof EntityDamageByEntityEvent)) {
+            return;
+        }
 
         Entity damager = ((EntityDamageByEntityEvent) entity.getLastDamageCause()).getDamager();
         if (damager instanceof Wolf) {
@@ -160,14 +172,20 @@ public class EventListener implements Listener {
 
     @EventHandler(ignoreCancelled = true)
     public void PlayerInteractEvent(PlayerInteractEvent ev) {
-        if (ev.getFace() == null || ev.getAction() != PlayerInteractEvent.Action.RIGHT_CLICK_BLOCK) return;
+        if (ev.getFace() == null || ev.getAction() != PlayerInteractEvent.Action.RIGHT_CLICK_BLOCK) {
+            return;
+        }
 
         Item item = ev.getItem();
         Block block = ev.getBlock();
-        if (item.getId() != Item.SPAWN_EGG || block.getId() != Block.MONSTER_SPAWNER) return;
+        if (item.getId() != Item.SPAWN_EGG || block.getId() != Block.MONSTER_SPAWNER) {
+            return;
+        }
 
         Player player = ev.getPlayer();
-        if (player.isAdventure()) return;
+        if (player.isAdventure()) {
+            return;
+        }
 
         BlockEntity blockEntity = block.getLevel().getBlockEntity(block);
         if (blockEntity instanceof BlockEntitySpawner) {
@@ -180,7 +198,9 @@ public class EventListener implements Listener {
                 }
             }
 
-            if (event.isCancelled()) return;
+            if (event.isCancelled()) {
+                return;
+            }
             ((BlockEntitySpawner) blockEntity).setSpawnEntityType(item.getDamage());
             ev.setCancelled(true);
 
@@ -190,7 +210,9 @@ public class EventListener implements Listener {
         } else {
             SpawnerCreateEvent event = new SpawnerCreateEvent(ev.getPlayer(), ev.getBlock(), item.getDamage());
             Server.getInstance().getPluginManager().callEvent(event);
-            if (event.isCancelled()) return;
+            if (event.isCancelled()) {
+                return;
+            }
             ev.setCancelled(true);
             if (blockEntity != null) {
                 blockEntity.close();
@@ -235,7 +257,9 @@ public class EventListener implements Listener {
 
                 Entity.createEntity("SnowGolem", pos).spawnToAll();
                 ev.setCancelled(true);
-                if (player.isSurvival()) player.getInventory().removeItem(Item.get(block.getId()));
+                if (player.isSurvival()) {
+                    player.getInventory().removeItem(Item.get(block.getId()));
+                }
             } else if (block.getSide(BlockFace.DOWN).getId() == Item.IRON_BLOCK && block.getSide(BlockFace.DOWN, 2).getId() == Item.IRON_BLOCK) {
                 int removeId = block.getId();
                 block = block.getSide(BlockFace.DOWN);
@@ -249,7 +273,9 @@ public class EventListener implements Listener {
                     second = block.getSide(BlockFace.SOUTH);
                 }
 
-                if (second == null || first == null) return;
+                if (second == null || first == null) {
+                    return;
+                }
 
                 Position pos = block.add(0.5, -1, 0.5);
                 SpawnGolemEvent event = new SpawnGolemEvent(player, pos, SpawnGolemEvent.GolemType.IRON_GOLEM);
@@ -266,7 +292,9 @@ public class EventListener implements Listener {
 
                 Entity.createEntity("IronGolem", pos).spawnToAll();
                 ev.setCancelled(true);
-                if (player.isSurvival()) player.getInventory().removeItem(Item.get(removeId));
+                if (player.isSurvival()) {
+                    player.getInventory().removeItem(Item.get(removeId));
+                }
             }
         } else if (item.getId() == Item.SKULL && item.getDamage() == 1) {
             if (block.getSide(BlockFace.DOWN).getId() == Item.SOUL_SAND && block.getSide(BlockFace.DOWN, 2).getId() == Item.SOUL_SAND) {
@@ -318,7 +346,9 @@ public class EventListener implements Listener {
         Block block = ev.getBlock();
         if ((block.getId() == Block.MONSTER_EGG) && Utils.rand(1, 5) == 1 && !ev.getItem().hasEnchantment(Enchantment.ID_SILK_TOUCH) && block.level.getBlockLightAt((int) block.x, (int) block.y, (int) block.z) < 12) {
             Silverfish entity = (Silverfish) Entity.createEntity("Silverfish", block.add(0.5, 0, 0.5));
-            if (entity == null) return;
+            if (entity == null) {
+                return;
+            }
             entity.spawnToAll();
             EntityEventPacket pk = new EntityEventPacket();
             pk.eid = entity.getId();
@@ -415,7 +445,9 @@ public class EventListener implements Listener {
             }
         } else if (ev.getDamager() instanceof Player) {
             for (Entity entity : ev.getDamager().getLevel().getNearbyEntities(ev.getDamager().getBoundingBox().grow(17, 17, 17), ev.getDamager())) {
-                if (entity.getId() == ev.getEntity().getId()) return;
+                if (entity.getId() == ev.getEntity().getId()) {
+                    return;
+                }
 
                 if (entity instanceof Wolf) {
                     if (((Wolf) entity).hasOwner()) {

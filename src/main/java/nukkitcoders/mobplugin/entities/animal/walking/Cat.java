@@ -49,7 +49,9 @@ public class Cat extends WalkingAnimal {
     public Item[] getDrops() {
         if (!this.isBaby()) {
             int c = Utils.rand(0, 2);
-            if (c > 0) return new Item[]{Item.get(Item.STRING, 0, c)};
+            if (c > 0) {
+                return new Item[]{Item.get(Item.STRING, 0, c)};
+            }
         }
 
         return new Item[0];

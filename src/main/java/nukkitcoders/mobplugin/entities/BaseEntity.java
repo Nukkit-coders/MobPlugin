@@ -781,7 +781,9 @@ public abstract class BaseEntity extends EntityCreature implements EntityAgeable
      */
     protected float getArmorPoints(int item) {
         Float points = ARMOR_POINTS.get(item);
-        if (points == null) return 0;
+        if (points == null) {
+            return 0;
+        }
         return points;
     }
 

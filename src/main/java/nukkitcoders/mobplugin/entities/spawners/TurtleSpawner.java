@@ -29,7 +29,9 @@ public class TurtleSpawner extends AbstractEntitySpawner {
                     if (b == Block.WATER || b == Block.STILL_WATER) {
                         for (int i = 0; i < Utils.rand(2, 6); i++) {
                             BaseEntity entity = this.spawnTask.createEntity("Turtle", pos.add(0, -1, 0));
-                            if (entity == null) return;
+                            if (entity == null) {
+                                return;
+                            }
                             if (Utils.rand(1, 10) == 1) {
                                 entity.setBaby(true);
                             }
