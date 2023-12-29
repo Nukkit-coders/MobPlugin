@@ -1,6 +1,7 @@
 package nukkitcoders.mobplugin.entities.animal;
 
 import cn.nukkit.Player;
+import cn.nukkit.entity.Entity;
 import cn.nukkit.event.entity.EntityDamageEvent;
 import cn.nukkit.level.format.FullChunk;
 import cn.nukkit.math.Vector3;
@@ -83,5 +84,10 @@ public abstract class WalkingAnimal extends WalkingEntity implements Animal {
         }
 
         return result;
+    }
+
+    @Override
+    public boolean canTarget(Entity entity) {
+        return (this.isInLove() || entity instanceof Player) && this.getPanicTicks() <= 0;
     }
 }
