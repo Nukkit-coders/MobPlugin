@@ -8,6 +8,7 @@ import cn.nukkit.event.entity.EntityDamageByEntityEvent;
 import cn.nukkit.item.Item;
 import cn.nukkit.level.format.FullChunk;
 import cn.nukkit.nbt.tag.CompoundTag;
+import cn.nukkit.network.protocol.LevelEventPacket;
 import cn.nukkit.potion.Effect;
 import nukkitcoders.mobplugin.entities.monster.SwimmingMonster;
 import nukkitcoders.mobplugin.utils.Utils;
@@ -85,8 +86,14 @@ public class ElderGuardian extends SwimmingMonster {
         boolean result = super.entityBaseTick(tickDiff);
         if (!this.closed && this.ticksLived % 1200 == 0 && this.isAlive()) {
             for (Player p : this.level.getPlayers().values()) {
-                if (p.distanceSquared(this) < 2500 && !p.hasEffect(Effect.MINING_FATIGUE)) {
+                if (p.getGamemode() % 2 == 0 && p.distanceSquared(this) < 2500 && !p.hasEffect(Effect.MINING_FATIGUE)) {
                     p.addEffect(Effect.getEffect(Effect.MINING_FATIGUE).setAmplifier(2).setDuration(6000));
+                    LevelEventPacket pk = new LevelEventPacket();
+                    pk.evid = LevelEventPacket.EVENT_GUARDIAN_CURSE;
+                    pk.x = (float) this.x;
+                    pk.y = (float) this.y;
+                    pk.z = (float) this.z;
+                    p.dataPacket(pk);
                 }
             }
         }
