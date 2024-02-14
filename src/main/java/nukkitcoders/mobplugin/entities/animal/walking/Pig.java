@@ -133,6 +133,10 @@ public class Pig extends WalkingAnimal implements EntityRideable {
 
     @Override
     public boolean mountEntity(Entity entity, byte mode) {
+        if (entity instanceof Player && ((Player) entity).isSleeping()) {
+            return false;
+        }
+
         boolean r = super.mountEntity(entity, mode);
 
         if (entity.riding != null) {

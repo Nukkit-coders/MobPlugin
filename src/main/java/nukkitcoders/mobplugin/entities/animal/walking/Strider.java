@@ -74,6 +74,10 @@ public class Strider extends WalkingAnimal implements EntityRideable {
             this.motionZ = 0;
             this.stayTime = 20;
         } else {
+            if (entity instanceof Player && ((Player) entity).isSleeping()) {
+                return false;
+            }
+
             if (isPassenger(entity)) {
                 return false;
             }

@@ -15,13 +15,13 @@ This is:
 - [ ] other
 
 ### Your issue / suggestion
-<!-- Tell us how we could improve the plugin. Describe clearly and in detail. For stack traces use https://hastebin.com/ and share the link. -->
+<!-- Tell us how we could improve the plugin. Describe clearly and in detail. If it's a bug, provide steps to reproduce it. For stack traces, use https://pastebin.com/ and share the link. -->
 
 ### Configuration
-Link to debugpaste:
-```
-<!-- Run debugpaste command and put the link here -->
-```
+Plugin version:
+
+Nukkit version:
+
 Config:
 ```
 <!-- Put your config.yml contents here  -->
