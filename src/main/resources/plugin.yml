@@ -3,21 +3,22 @@ main: nukkitcoders.mobplugin.MobPlugin
 version: "${pom.version}"
 api: ["1.0.14"]
 author: kniffo80, matt404, augesrob, PetteriM1, PikyCZ, zzz1999, SergeyDertan
-description: Entity AI & autospawn plugin for NukkitX servers
-website: https://nukkitx.com/resources/mobplugin.3/
+description: Add mobs and animals with AI & spawning
+website: https://cloudburstmc.org/resources/mobplugin.3/
 load: STARTUP
 
 commands:
  mob:
   description: Mob plugin main command
   usage: /mob
-  permission: mobplugin.command
+  permission: mobplugin.mob
  summon:
   description: Summon entity
   usage: /summon <entity> [player]
-  permission: mobplugin.command
+  permission: mobplugin.summon
 
 permissions:
- mobplugin.command:
-  description: ""
+ mobplugin.mob:
+  default: op
+ mobplugin.summon:
   default: op

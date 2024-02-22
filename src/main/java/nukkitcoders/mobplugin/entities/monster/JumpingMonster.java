@@ -77,11 +77,11 @@ public abstract class JumpingMonster extends JumpingEntity implements Monster {
         }
 
         if (minDamage == null || minDamage.length < 4) {
-            minDamage = new float[] { 0, 0, 0, 0 };
+            minDamage = new float[]{0, 0, 0, 0};
         }
 
         if (maxDamage == null || maxDamage.length < 4) {
-            maxDamage = new float[] { 0, 0, 0, 0 };
+            maxDamage = new float[]{0, 0, 0, 0};
         }
 
         for (int i = 0; i < 4; i++) {

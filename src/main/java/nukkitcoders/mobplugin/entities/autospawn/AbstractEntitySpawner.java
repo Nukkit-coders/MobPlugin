@@ -6,6 +6,7 @@ import cn.nukkit.block.Block;
 import cn.nukkit.block.BlockLava;
 import cn.nukkit.level.Level;
 import cn.nukkit.level.Position;
+import cn.nukkit.level.format.FullChunk;
 import nukkitcoders.mobplugin.AutoSpawnTask;
 import nukkitcoders.mobplugin.MobPlugin;
 import nukkitcoders.mobplugin.entities.animal.walking.Strider;
@@ -39,7 +40,8 @@ public abstract class AbstractEntitySpawner implements IEntitySpawner {
             pos.x += this.spawnTask.getRandomSafeXZCoord(Utils.rand(48, 52), Utils.rand(24, 28), Utils.rand(4, 8));
             pos.z += this.spawnTask.getRandomSafeXZCoord(Utils.rand(48, 52), Utils.rand(24, 28), Utils.rand(4, 8));
 
-            if (!level.isChunkLoaded((int) pos.x >> 4, (int) pos.z >> 4) || !level.isChunkGenerated((int) pos.x >> 4, (int) pos.z >> 4)) {
+            FullChunk chunk = level.getChunkIfLoaded((int) pos.x >> 4, (int) pos.z >> 4); // pos is already floored
+            if (chunk == null || !chunk.isGenerated() || !chunk.isPopulated()) {
                 return;
             }
 
@@ -48,7 +50,7 @@ public abstract class AbstractEntitySpawner implements IEntitySpawner {
             }
 
             if (Utils.monstersList.contains(this.getEntityNetworkId())) {
-                int biome = level.getBiomeId((int) pos.x, (int) pos.z);
+                int biome = chunk.getBiomeId(((int) pos.x) & 0x0f, ((int) pos.z) & 0x0f);
                 if (biome == 14 || biome == 15) {
                     return; // Hostile mobs don't spawn on mushroom island
                 }

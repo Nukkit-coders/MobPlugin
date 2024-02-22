@@ -117,7 +117,7 @@ public abstract class WalkingEntity extends BaseEntity {
         Block down;
         if (this.followTarget == null && this.passengers.isEmpty() && !(down = block.down()).isSolid() && !block.isSolid() && !down.down().isSolid()) {
             this.stayTime = 10;
-        } else if (!block.canPassThrough() && block.up().canPassThrough() && that.up(2).canPassThrough()) {
+        } else if (!block.canPassThrough() && !(block instanceof BlockFlowable || block.getId() == BlockID.SOUL_SAND) && block.up().canPassThrough() && that.up(2).canPassThrough()) {
             if (block instanceof BlockFence || block instanceof BlockFenceGate) {
                 this.motionY = this.getGravity();
             } else if (this.motionY <= this.getGravity() * 4) {

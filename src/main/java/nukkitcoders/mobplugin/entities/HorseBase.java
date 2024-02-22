@@ -91,7 +91,7 @@ public class HorseBase extends WalkingAnimal implements EntityRideable {
     public boolean onInteract(Player player, Item item, Vector3 clickedPos) {
         if (this.isFeedItem(item) && !this.isInLoveCooldown()) {
             this.level.addLevelSoundEvent(this, LevelSoundEventPacket.SOUND_EAT);
-            this.level.addParticle(new ItemBreakParticle(this.add(0,this.getMountedYOffset(), 0), Item.get(item.getId(), 0, 1)));
+            this.level.addParticle(new ItemBreakParticle(this.add(0, this.getMountedYOffset(), 0), Item.get(item.getId(), 0, 1)));
             this.setInLove();
             return true;
         } else if (this.canBeSaddled() && !this.isSaddled() && item.getId() == Item.SADDLE) {

@@ -87,7 +87,7 @@ public class Guardian extends SwimmingMonster {
                 this.setDataProperty(new LongEntityData(Entity.DATA_TARGET_EID, laserTargetEid = followTarget.getId()));
                 laserChargeTick = 40;
             }
-            if (targetOption((EntityCreature) followTarget,this.distanceSquared(followTarget))) {
+            if (targetOption((EntityCreature) followTarget, this.distanceSquared(followTarget))) {
                 if (--laserChargeTick < 0) {
                     attackEntity(followTarget);
                     this.setDataProperty(new LongEntityData(Entity.DATA_TARGET_EID, laserTargetEid = -1));
