@@ -1,6 +1,9 @@
 package nukkitcoders.mobplugin.route;
 
 import cn.nukkit.block.Block;
+import cn.nukkit.block.BlockFlowable;
+import cn.nukkit.block.BlockSnowLayer;
+import cn.nukkit.level.format.FullChunk;
 import cn.nukkit.math.AxisAlignedBB;
 import cn.nukkit.math.SimpleAxisAlignedBB;
 import cn.nukkit.math.Vector3;
@@ -110,20 +113,16 @@ public class WalkerRouteFinder extends SimpleRouteFinder {
         return true;
     }
 
+    private Block getHighestUnder(Vector3 pos) {
+        int x = pos.getFloorX();
+        int z = pos.getFloorZ();
 
-    private Block getHighestUnder(Vector3 vector3, int limit) {
-        if (limit > 0) {
-            for (int y = vector3.getFloorY(); y >= vector3.getFloorY() - limit; y--) {
-                Block block = this.level.getBlock(vector3.getFloorX(), y, vector3.getFloorZ(), false);
-                if (isWalkable(block) && level.getBlock(block.add(0, 1, 0), false).getId() == Block.AIR) {
-                    return block;
-                }
-            }
-            return null;
-        }
-        for (int y = vector3.getFloorY(); y >= 0; y--) {
-            Block block = this.level.getBlock(vector3.getFloorX(), y, vector3.getFloorZ(), false);
-            if (isWalkable(block) && level.getBlock(block.add(0, 1, 0), false).getId() == Block.AIR) {
+        int minY = pos.getFloorY() - 4;
+
+        for (int y = pos.getFloorY(); y >= minY; y--) {
+            Block block = level.getBlock(x, y, z, false);
+            Block above;
+            if (isWalkable(block) && ((above = level.getBlock(x, y + 1, z, false)).getId() == Block.AIR || above instanceof BlockFlowable || (above instanceof BlockSnowLayer || above.isTransparent()))) {
                 return block;
             }
         }
@@ -146,7 +145,7 @@ public class WalkerRouteFinder extends SimpleRouteFinder {
     }
 
     private int getWalkableHorizontalOffset(Vector3 vector3) {
-        Block block = getHighestUnder(vector3, 4);
+        Block block = getHighestUnder(vector3);
         if (block != null) {
             return (block.getFloorY() - vector3.getFloorY()) + 1;
         }
@@ -336,21 +335,21 @@ public class WalkerRouteFinder extends SimpleRouteFinder {
             return true;
         }
         boolean traverseDirection = Math.abs(pos1.getX() - pos2.getX()) > Math.abs(pos1.getZ() - pos2.getZ());
+        double loopStart;
+        double loopEnd;
+        ArrayList<Vector3> list = new ArrayList<>();
         if (traverseDirection) {
-            double loopStart = Math.min(pos1.getX(), pos2.getX());
-            double loopEnd = Math.max(pos1.getX(), pos2.getX());
-            ArrayList<Vector3> list = new ArrayList<>();
+            loopStart = Math.min(pos1.getX(), pos2.getX());
+            loopEnd = Math.max(pos1.getX(), pos2.getX());
             for (double i = Math.ceil(loopStart); i <= Math.floor(loopEnd); i += 1.0) {
                 double result;
                 if ((result = Utils.calLinearFunction(pos1, pos2, i, Utils.ACCORDING_X_OBTAIN_Y)) != Double.MAX_VALUE) {
                     list.add(new Vector3(i, pos1.getY(), result));
                 }
             }
-            return hasBlocksAround(list);
         } else {
-            double loopStart = Math.min(pos1.getZ(), pos2.getZ());
-            double loopEnd = Math.max(pos1.getZ(), pos2.getZ());
-            ArrayList<Vector3> list = new ArrayList<>();
+            loopStart = Math.min(pos1.getZ(), pos2.getZ());
+            loopEnd = Math.max(pos1.getZ(), pos2.getZ());
             for (double i = Math.ceil(loopStart); i <= Math.floor(loopEnd); i += 1.0) {
                 double result;
                 if ((result = Utils.calLinearFunction(pos1, pos2, i, Utils.ACCORDING_Y_OBTAIN_X)) != Double.MAX_VALUE) {
@@ -358,11 +357,9 @@ public class WalkerRouteFinder extends SimpleRouteFinder {
                 }
             }
 
-            return hasBlocksAround(list);
         }
-
+        return hasBlocksAround(list);
     }
-
 
     private boolean hasBlocksAround(ArrayList<Vector3> list) {
         double radius = (this.entity.getWidth() * this.entity.getScale()) / 2 + 0.1;
