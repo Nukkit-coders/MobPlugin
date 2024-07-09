@@ -48,9 +48,8 @@ public class Pillager extends WalkingMonster {
 
     @Override
     public void initEntity() {
-        super.initEntity();
-
         this.setMaxHealth(24);
+        super.initEntity();
     }
 
     @Override

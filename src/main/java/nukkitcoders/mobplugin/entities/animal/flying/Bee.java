@@ -52,9 +52,9 @@ public class Bee extends FlyingMonster {
 
     @Override
     public void initEntity() {
+        this.setMaxHealth(10);
         super.initEntity();
 
-        this.setMaxHealth(10);
         this.setDamage(new float[]{0, 2, 2, 3});
     }
 

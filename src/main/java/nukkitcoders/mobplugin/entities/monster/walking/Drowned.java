@@ -51,10 +51,10 @@ public class Drowned extends WalkingMonster implements EntitySmite {
 
     @Override
     protected void initEntity() {
+        this.setMaxHealth(20);
         super.initEntity();
 
         this.setDamage(new float[] { 0, 2, 3, 4 });
-        this.setMaxHealth(20);
 
         if (this.namedTag.contains("Item")) {
             this.tool = NBTIO.getItemHelper(this.namedTag.getCompound("Item"));

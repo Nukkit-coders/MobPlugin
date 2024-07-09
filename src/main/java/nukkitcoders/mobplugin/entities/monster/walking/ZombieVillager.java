@@ -46,10 +46,10 @@ public class ZombieVillager extends WalkingMonster implements EntitySmite {
 
     @Override
     public void initEntity() {
+        this.setMaxHealth(20);
         super.initEntity();
 
         this.setDamage(new float[] { 0, 3, 4, 6 });
-        this.setMaxHealth(20);
     }
 
     @Override

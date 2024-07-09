@@ -45,9 +45,9 @@ public class Strider extends WalkingAnimal implements EntityRideable {
 
     @Override
     protected void initEntity() {
+        this.setMaxHealth(20);
         super.initEntity();
         this.fireProof = true;
-        this.setMaxHealth(20);
 
         if (this.namedTag.contains("Saddle")) {
             this.setSaddled(this.namedTag.getBoolean("Saddle"));

@@ -3,7 +3,6 @@ package nukkitcoders.mobplugin.route;
 import cn.nukkit.block.Block;
 import cn.nukkit.block.BlockFlowable;
 import cn.nukkit.block.BlockSnowLayer;
-import cn.nukkit.level.format.FullChunk;
 import cn.nukkit.math.AxisAlignedBB;
 import cn.nukkit.math.SimpleAxisAlignedBB;
 import cn.nukkit.math.Vector3;

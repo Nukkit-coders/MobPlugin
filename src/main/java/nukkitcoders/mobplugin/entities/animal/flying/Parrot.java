@@ -38,8 +38,8 @@ public class Parrot extends FlyingAnimal {
 
     @Override
     public void initEntity() {
-        super.initEntity();
         this.setMaxHealth(6);
+        super.initEntity();
 
         if (this.namedTag.contains("Variant")) {
             this.variant = this.namedTag.getInt("Variant");

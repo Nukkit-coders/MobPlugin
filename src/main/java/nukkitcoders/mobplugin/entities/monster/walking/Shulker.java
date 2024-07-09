@@ -44,11 +44,17 @@ public class Shulker extends WalkingMonster {
 
     @Override
     protected void initEntity() {
+        this.setMaxHealth(15);
         super.initEntity();
 
         this.fireProof = true;
         this.noFallDamage = true;
-        this.setMaxHealth(15);
+
+        if (this.namedTag.contains("Color")) {
+            this.dataProperties.putInt(DATA_VARIANT, this.namedTag.getByte("Color"));
+        } else {
+            this.dataProperties.putInt(DATA_VARIANT, 16);
+        }
     }
 
     @Override

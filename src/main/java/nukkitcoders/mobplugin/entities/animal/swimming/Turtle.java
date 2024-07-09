@@ -30,8 +30,8 @@ public class Turtle extends SwimmingAnimal {
 
     @Override
     public void initEntity() {
-        super.initEntity();
         this.setMaxHealth(30);
+        super.initEntity();
     }
 
     @Override

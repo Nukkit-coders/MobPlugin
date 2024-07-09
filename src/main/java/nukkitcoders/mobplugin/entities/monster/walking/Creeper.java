@@ -55,9 +55,8 @@ public class Creeper extends WalkingMonster implements EntityExplosive {
 
     @Override
     public void initEntity() {
-        super.initEntity();
-
         this.setMaxHealth(20);
+        super.initEntity();
 
         if (this.namedTag.contains("powered")) {
             this.setPowered(this.namedTag.getBoolean("powered"));

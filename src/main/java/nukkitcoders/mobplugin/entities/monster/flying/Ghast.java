@@ -4,6 +4,7 @@ import cn.nukkit.Player;
 import cn.nukkit.block.Block;
 import cn.nukkit.entity.Entity;
 import cn.nukkit.entity.EntityCreature;
+import cn.nukkit.event.entity.EntityDamageByChildEntityEvent;
 import cn.nukkit.event.entity.EntityDamageByEntityEvent;
 import cn.nukkit.event.entity.EntityDamageEvent;
 import cn.nukkit.event.entity.ProjectileLaunchEvent;
@@ -53,10 +54,10 @@ public class Ghast extends FlyingMonster {
 
     @Override
     public void initEntity() {
+        this.setMaxHealth(10);
         super.initEntity();
 
         this.fireProof = true;
-        this.setMaxHealth(10);
         this.setDataFlag(DATA_FLAGS, DATA_FLAG_FIRE_IMMUNE, true);
     }
 
@@ -140,5 +141,19 @@ public class Ghast extends FlyingMonster {
     @Override
     public int nearbyDistanceMultiplier() {
         return 1000; // don't follow
+    }
+
+    @Override
+    public void kill() {
+        if (this.isAlive()) {
+            super.kill();
+
+            if (this.getLastDamageCause() instanceof EntityDamageByChildEntityEvent && ((EntityDamageByChildEntityEvent) this.getLastDamageCause()).getDamager() == this) {
+                Entity damager = ((EntityDamageByChildEntityEvent) this.getLastDamageCause()).getChild();
+                if (damager instanceof EntityGhastFireBall && ((EntityGhastFireBall) damager).directionChanged != null) {
+                    ((EntityGhastFireBall) damager).directionChanged.awardAchievement("ghast");
+                }
+            }
+        }
     }
 }

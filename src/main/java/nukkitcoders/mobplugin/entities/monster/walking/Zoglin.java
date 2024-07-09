@@ -33,8 +33,8 @@ public class Zoglin extends WalkingMonster implements EntitySmite {
 
     @Override
     protected void initEntity() {
-        super.initEntity();
         this.setMaxHealth(40);
+        super.initEntity();
         this.setDamage(new float[]{0, 2, 3, 4});
     }
 

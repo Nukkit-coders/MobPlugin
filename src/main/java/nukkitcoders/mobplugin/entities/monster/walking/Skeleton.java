@@ -14,6 +14,7 @@ import cn.nukkit.item.ItemBow;
 import cn.nukkit.level.Location;
 import cn.nukkit.level.Sound;
 import cn.nukkit.level.format.FullChunk;
+import cn.nukkit.math.Vector2;
 import cn.nukkit.nbt.tag.CompoundTag;
 import cn.nukkit.network.protocol.MobEquipmentPacket;
 import nukkitcoders.mobplugin.MobPlugin;
@@ -36,9 +37,8 @@ public class Skeleton extends WalkingMonster implements EntitySmite {
 
     @Override
     public void initEntity() {
-        super.initEntity();
-
         this.setMaxHealth(20);
+        super.initEntity();
     }
 
     @Override
@@ -165,5 +165,23 @@ public class Skeleton extends WalkingMonster implements EntitySmite {
             }
         }
         return hasTarget;
+    }
+
+    @Override
+    public void kill() {
+        if (!this.isAlive()) {
+            return;
+        }
+
+        super.kill();
+
+        if (this.lastDamageCause instanceof EntityDamageByChildEntityEvent) {
+            Entity damager;
+            if (((EntityDamageByChildEntityEvent) this.lastDamageCause).getChild() instanceof EntityArrow && (damager = ((EntityDamageByChildEntityEvent) this.lastDamageCause).getDamager()) instanceof Player) {
+                if (new Vector2(this.x, this.z).distance(new Vector2(damager.x, damager.z)) >= 50) {
+                    ((Player) damager).awardAchievement("snipeSkeleton");
+                }
+            }
+        }
     }
 }

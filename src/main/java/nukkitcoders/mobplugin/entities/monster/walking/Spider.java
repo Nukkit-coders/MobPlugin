@@ -51,9 +51,9 @@ public class Spider extends WalkingMonster implements EntityArthropod {
     }
 
     public void initEntity() {
+        this.setMaxHealth(16);
         super.initEntity();
 
-        this.setMaxHealth(16);
         this.setDamage(new float[] { 0, 2, 2, 3 });
     }
 

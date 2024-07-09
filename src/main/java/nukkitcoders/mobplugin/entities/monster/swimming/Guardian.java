@@ -42,9 +42,8 @@ public class Guardian extends SwimmingMonster {
 
     @Override
     public void initEntity() {
-        super.initEntity();
-
         this.setMaxHealth(30);
+        super.initEntity();
     }
 
     @Override

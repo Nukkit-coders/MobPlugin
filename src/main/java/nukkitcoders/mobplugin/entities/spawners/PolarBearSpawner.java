@@ -28,9 +28,7 @@ public class PolarBearSpawner extends AbstractEntitySpawner {
                 if (blockId == Block.GRASS || blockId == Block.SNOW_LAYER) {
                     for (int i = 0; i < Utils.rand(1, 2); i++) {
                         BaseEntity entity = this.spawnTask.createEntity("PolarBear", pos.add(0.5, 1, 0.5));
-                        if (entity == null) {
-                            return;
-                        }
+                        if (entity == null) return;
                         if (Utils.rand(1, 20) == 1) {
                             entity.setBaby(true);
                         }

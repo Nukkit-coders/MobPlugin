@@ -45,8 +45,8 @@ public class Villager extends WalkingAnimal {
 
     @Override
     public void initEntity() {
-        super.initEntity();
         this.setMaxHealth(10);
+        super.initEntity();
 
         if (!this.namedTag.contains("Profession")) {
             this.setProfession(PROFESSION_GENERIC);

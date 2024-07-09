@@ -45,8 +45,8 @@ public class Mule extends HorseBase {
 
     @Override
     public void initEntity() {
-        super.initEntity();
         this.setMaxHealth(15);
+        super.initEntity();
     }
 
     @Override

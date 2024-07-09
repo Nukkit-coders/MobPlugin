@@ -22,7 +22,7 @@ public class PandaSpawner extends AbstractEntitySpawner {
             return;
         }
         final int biomeId = level.getBiomeId((int) pos.x, (int) pos.z);
-        if ((biomeId == 21 && Utils.rand(1, 10) != 1) || biomeId != 168 && biomeId != 169 && biomeId != 21) {
+        if (((biomeId == 21 || biomeId == 22) && Utils.rand(1, 10) != 1) || biomeId != 48 && biomeId != 49 && biomeId != 21 && biomeId != 22) {
             return;
         }
         if (!MobPlugin.isAnimalSpawningAllowedByTime(level) || level.getBlockIdAt((int) pos.x, (int) pos.y, (int) pos.z) != Block.GRASS) {
@@ -30,9 +30,7 @@ public class PandaSpawner extends AbstractEntitySpawner {
         }
         for (int i = 0; i < Utils.rand(1, 2); i++) {
             BaseEntity entity = this.spawnTask.createEntity("Panda", pos.add(0.5, 1, 0.5));
-            if (entity == null) {
-                return;
-            }
+            if (entity == null) return;
             if (Utils.rand(1, 20) == 1) {
                 entity.setBaby(true);
             }

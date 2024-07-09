@@ -47,9 +47,9 @@ public class Husk extends WalkingMonster implements EntityAgeable, EntitySmite {
 
     @Override
     protected void initEntity() {
+        this.setMaxHealth(20);
         super.initEntity();
         this.setDamage(new float[]{0, 3, 4, 6});
-        this.setMaxHealth(20);
     }
 
     @Override

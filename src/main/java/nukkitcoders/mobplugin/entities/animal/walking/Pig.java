@@ -1,6 +1,8 @@
 package nukkitcoders.mobplugin.entities.animal.walking;
 
 import cn.nukkit.Player;
+import cn.nukkit.Server;
+import cn.nukkit.entity.Attribute;
 import cn.nukkit.entity.Entity;
 import cn.nukkit.entity.EntityCreature;
 import cn.nukkit.entity.EntityRideable;
@@ -8,6 +10,7 @@ import cn.nukkit.entity.data.FloatEntityData;
 import cn.nukkit.entity.data.Vector3fEntityData;
 import cn.nukkit.entity.mob.EntityZombiePigman;
 import cn.nukkit.event.entity.CreatureSpawnEvent;
+import cn.nukkit.event.entity.EntityDamageEvent;
 import cn.nukkit.item.Item;
 import cn.nukkit.level.Sound;
 import cn.nukkit.level.format.FullChunk;
@@ -16,6 +19,7 @@ import cn.nukkit.math.Vector3;
 import cn.nukkit.math.Vector3f;
 import cn.nukkit.nbt.tag.CompoundTag;
 import cn.nukkit.network.protocol.LevelSoundEventPacket;
+import cn.nukkit.network.protocol.UpdateAttributesPacket;
 import nukkitcoders.mobplugin.entities.animal.WalkingAnimal;
 import nukkitcoders.mobplugin.utils.FastMathLite;
 import nukkitcoders.mobplugin.utils.Utils;
@@ -57,8 +61,8 @@ public class Pig extends WalkingAnimal implements EntityRideable {
 
     @Override
     public void initEntity() {
-        super.initEntity();
         this.setMaxHealth(10);
+        super.initEntity();
 
         if (this.namedTag.contains("Saddle")) {
            this.setSaddled(this.namedTag.getBoolean("Saddle"));
@@ -277,6 +281,31 @@ public class Pig extends WalkingAnimal implements EntityRideable {
             }
 
             updatePassengerPosition(passenger);
+        }
+    }
+
+    @Override
+    public boolean attack(EntityDamageEvent source) {
+        boolean attack = super.attack(source);
+        if (attack && this.isSaddled() && source.getCause() == EntityDamageEvent.DamageCause.FALL && source.getFinalDamage() >= 2 && !this.passengers.isEmpty()) {
+            Entity p = this.passengers.get(0);
+            if (p instanceof Player) {
+                ((Player) p).awardAchievement("flyPig");
+            }
+        }
+        return attack;
+    }
+
+    @Override
+    public void setHealth(float health) {
+        super.setHealth(health);
+
+        if (this.saddled && this.isAlive() && !this.passengers.isEmpty()) {
+            UpdateAttributesPacket pk = new UpdateAttributesPacket();
+            int max = this.getMaxHealth();
+            pk.entries = new Attribute[]{Attribute.getAttribute(Attribute.MAX_HEALTH).setMaxValue(max).setValue(this.health < max ? this.health : max)};
+            pk.entityId = this.id;
+            Server.broadcastPacket(this.getViewers().values(), pk);
         }
     }
 }

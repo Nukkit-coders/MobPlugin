@@ -35,7 +35,7 @@ public class Frog extends JumpingAnimal {
 
     @Override
     protected void initEntity() {
-        super.initEntity();
         this.setMaxHealth(10);
+        super.initEntity();
     }
 }

@@ -73,6 +73,8 @@ public class Wolf extends TameableMonster {
 
     @Override
     protected void initEntity() {
+        this.setMaxHealth(8);
+
         super.initEntity();
         
         this.setFriendly(true);
@@ -90,7 +92,6 @@ public class Wolf extends TameableMonster {
             }
         }
 
-        this.setMaxHealth(8);
         this.setDamage(new float[] { 0, 3, 4, 6 });
     }
 

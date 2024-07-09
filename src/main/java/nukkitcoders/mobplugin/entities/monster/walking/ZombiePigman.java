@@ -50,6 +50,7 @@ public class ZombiePigman extends WalkingMonster implements EntitySmite {
 
     @Override
     protected void initEntity() {
+        this.setMaxHealth(20);
         super.initEntity();
 
         if (this.namedTag.contains("Angry")) {
@@ -58,7 +59,6 @@ public class ZombiePigman extends WalkingMonster implements EntitySmite {
 
         this.fireProof = true;
         this.setDamage(new float[] { 0, 5, 9, 13 });
-        this.setMaxHealth(20);
     }
 
     @Override
@@ -157,7 +157,7 @@ public class ZombiePigman extends WalkingMonster implements EntitySmite {
 
     @Override
     public String getName() {
-        return this.hasCustomName() ? this.getNameTag() : "Zombie Pigman";
+        return this.hasCustomName() ? this.getNameTag() : "Zombified Piglin";
     }
 
     @Override

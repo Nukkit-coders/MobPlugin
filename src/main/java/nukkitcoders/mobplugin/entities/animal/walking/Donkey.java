@@ -48,8 +48,8 @@ public class Donkey extends HorseBase {
 
     @Override
     public void initEntity() {
-        super.initEntity();
         this.setMaxHealth(15);
+        super.initEntity();
 
         if (this.namedTag.contains("ChestedHorse")) {
             this.setChested(this.namedTag.getBoolean("ChestedHorse"));

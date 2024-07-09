@@ -44,8 +44,8 @@ public class Pufferfish extends Fish {
 
     @Override
     public void initEntity() {
-        super.initEntity();
         this.setMaxHealth(3);
+        super.initEntity();
     }
 
     @Override

@@ -24,13 +24,11 @@ public class FoxSpawner extends AbstractEntitySpawner {
         int blockId = level.getBlockIdAt((int) pos.x, (int) pos.y, (int) pos.z);
         if (blockId == Block.GRASS || blockId == Block.SNOW_LAYER) {
             final int biomeId = level.getBiomeId((int) pos.x, (int) pos.z);
-            if (biomeId == 5 || biomeId == 160 || biomeId == 31 || biomeId == 19 || biomeId == 30 || biomeId == 133 || biomeId == 158 || biomeId == 32 || biomeId == 33) {
+            if (biomeId == 5 || biomeId == 160 || biomeId == 161 || biomeId == 31 || biomeId == 19 || biomeId == 30 || biomeId == 133 || biomeId == 158 || biomeId == 32 || biomeId == 33) {
                 if (MobPlugin.isAnimalSpawningAllowedByTime(level)) {
                     for (int i = 0; i < Utils.rand(2, 4); i++) {
                         BaseEntity entity = this.spawnTask.createEntity("Fox", pos.add(0.5, 1, 0.5));
-                        if (entity == null) {
-                            return;
-                        }
+                        if (entity == null) return;
                         if (Utils.rand(1, 20) == 1) {
                             entity.setBaby(true);
                         }

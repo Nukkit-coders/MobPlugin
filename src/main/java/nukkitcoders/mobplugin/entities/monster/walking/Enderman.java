@@ -56,8 +56,8 @@ public class Enderman extends WalkingMonster {
 
     @Override
     protected void initEntity() {
-        super.initEntity();
         this.setMaxHealth(40);
+        super.initEntity();
 
         this.setDamage(new float[]{0, 4, 7, 10});
     }

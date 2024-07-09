@@ -29,9 +29,8 @@ public class Allay extends FlyingAnimal {
 
     @Override
     public void initEntity() {
-        super.initEntity();
-
         this.setMaxHealth(20);
+        super.initEntity();
     }
 
     @Override

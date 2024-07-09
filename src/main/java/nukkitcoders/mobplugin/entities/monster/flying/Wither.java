@@ -61,13 +61,15 @@ public class Wither extends FlyingMonster implements Boss, EntitySmite {
 
     @Override
     public void initEntity() {
+        this.setMaxHealth(witherMaxHealth());
         super.initEntity();
 
         this.fireProof = true;
-        this.setMaxHealth(witherMaxHealth());
         this.setDamage(new float[]{0, 2, 4, 6});
         if (this.age == 0) {
             this.setDataProperty(new IntEntityData(DATA_WITHER_INVULNERABLE_TICKS, 200));
+
+            this.stayTime = 220;
         }
     }
 
@@ -180,6 +182,13 @@ public class Wither extends FlyingMonster implements Boss, EntitySmite {
         }
 
         if (!this.exploded && this.lastDamageCause != null && EntityDamageEvent.DamageCause.SUICIDE != this.lastDamageCause.getCause()) {
+            if (this.lastDamageCause instanceof EntityDamageByEntityEvent) {
+                Entity damager = ((EntityDamageByEntityEvent) this.lastDamageCause).getDamager();
+                if (damager instanceof Player) {
+                    ((Player) damager).awardAchievement("killWither");
+                }
+            }
+
             this.exploded = true;
             this.explode();
         }

@@ -44,9 +44,9 @@ public class Phantom extends FlyingMonster implements EntitySmite {
 
     @Override
     public void initEntity() {
+        this.setMaxHealth(20);
         super.initEntity();
 
-        this.setMaxHealth(20);
         this.setDamage(new float[] { 0, 4, 6, 9 });
     }
 

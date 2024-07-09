@@ -56,10 +56,10 @@ public class Zombie extends WalkingMonster implements EntityAgeable, EntitySmite
 
     @Override
     protected void initEntity() {
+        this.setMaxHealth(20);
         super.initEntity();
 
         this.setDamage(new float[] { 0, 2, 3, 4 });
-        this.setMaxHealth(20);
 
         if (this.namedTag.contains("Armor") && this.namedTag.get("Armor") instanceof ListTag) {
             ListTag<CompoundTag> listTag = this.namedTag.getList("Armor", CompoundTag.class);

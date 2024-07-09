@@ -26,9 +26,9 @@ public class Ravager extends WalkingMonster {
 
     @Override
     protected void initEntity() {
+        this.setMaxHealth(100);
         super.initEntity();
 
-        this.setMaxHealth(100);
         this.setDamage(new float[] { 0, 7, 12, 18 });
     }
 

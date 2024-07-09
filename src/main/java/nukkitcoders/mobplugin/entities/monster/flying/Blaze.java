@@ -43,10 +43,10 @@ public class Blaze extends FlyingMonster {
 
     @Override
     public void initEntity() {
+        this.setMaxHealth(20);
         super.initEntity();
 
         this.fireProof = true;
-        this.setMaxHealth(20);
     }
 
     @Override

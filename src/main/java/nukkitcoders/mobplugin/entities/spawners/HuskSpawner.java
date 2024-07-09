@@ -20,12 +20,10 @@ public class HuskSpawner extends AbstractEntitySpawner {
     public void spawn(Player player, Position pos, Level level) {
         final int biomeId = level.getBiomeId((int) pos.x, (int) pos.z);
         if (biomeId == 2 || biomeId == 130) {
-            if (level.getBlockLightAt((int) pos.x, (int) pos.y, (int) pos.z) <= 7) {
+            if (level.getBlockLightAt((int) pos.x, (int) pos.y + 1, (int) pos.z) <= 7) {
                 if (MobPlugin.isMobSpawningAllowedByTime(level)) {
                     BaseEntity entity = this.spawnTask.createEntity("Husk", pos.add(0.5, 1, 0.5));
-                    if (entity == null) {
-                        return;
-                    }
+                    if (entity == null) return;
                     if (Utils.rand(1, 20) == 1) {
                         entity.setBaby(true);
                     }

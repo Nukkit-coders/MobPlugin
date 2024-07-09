@@ -17,8 +17,12 @@ public class PiglinBrute extends WalkingMonster {
 
     public PiglinBrute(FullChunk chunk, CompoundTag nbt) {
         super(chunk, nbt);
+    }
 
+    @Override
+    public void initEntity() {
         this.setMaxHealth(50);
+        super.initEntity();
         this.setDamage(new float[]{0, 3, 7, 10});
     }
 

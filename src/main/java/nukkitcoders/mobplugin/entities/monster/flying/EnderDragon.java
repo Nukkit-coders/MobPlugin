@@ -6,6 +6,7 @@ import cn.nukkit.entity.Entity;
 import cn.nukkit.entity.EntityCreature;
 import cn.nukkit.entity.item.EntityEndCrystal;
 import cn.nukkit.event.entity.ProjectileLaunchEvent;
+import cn.nukkit.item.Item;
 import cn.nukkit.level.Location;
 import cn.nukkit.level.format.FullChunk;
 import cn.nukkit.math.Vector3;
@@ -44,13 +45,12 @@ public class EnderDragon extends FlyingMonster implements Boss {
 
     @Override
     public void initEntity() {
+        this.setMaxHealth(200);
         super.initEntity();
+        this.setHealth(200);
 
         this.fireProof = true;
         this.setDataFlag(DATA_FLAGS, DATA_FLAG_FIRE_IMMUNE, true);
-
-        this.setMaxHealth(200);
-        this.setHealth(200);
     }
 
     @Override
@@ -157,5 +157,10 @@ public class EnderDragon extends FlyingMonster implements Boss {
     @Override
     protected boolean isInTickingRange() {
         return true;
+    }
+
+    @Override
+    protected boolean applyNameTag(Player player, Item item) {
+        return false;
     }
 }

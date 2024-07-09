@@ -19,8 +19,8 @@ public class TropicalFish extends Fish {
 
     @Override
     protected void initEntity() {
-        super.initEntity();
         this.setMaxHealth(3);
+        super.initEntity();
 
         if (this.namedTag.contains("VariantA")) {
             this.variantA = this.namedTag.getInt("VariantA");

@@ -1,8 +1,6 @@
 package nukkitcoders.mobplugin;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.StringTokenizer;
+import java.util.*;
 
 public class Config {
 
@@ -27,8 +25,8 @@ public class Config {
     public boolean creeperExplodeBlocks;
     public boolean allowBreeding;
     public boolean showBossBar;
-    public List<String> mobSpawningDisabledWorlds;
-    public List<String> mobCreationDisabledWorlds;
+    public Set<String> mobSpawningDisabledWorlds;
+    public Set<String> mobCreationDisabledWorlds;
 
     Config(MobPlugin plugin) {
         plugin.saveDefaultConfig();
@@ -106,7 +104,7 @@ public class Config {
         //entities
         spawnDelay = pluginConfig.getInt("entities.autospawn-ticks") >> 1; // The task runs double the speed but spawns only either monsters or animals
         despawnTicks = pluginConfig.getInt("entities.despawn-ticks");
-        mobSpawningDisabledWorlds = loadStringList("entities.worlds-spawning-disabled");
+        mobSpawningDisabledWorlds = loadStringListAsSet("entities.worlds-spawning-disabled");
 
         //spawners
         spawnersEnabled = pluginConfig.getBoolean("spawners.enabled");
@@ -126,14 +124,14 @@ public class Config {
         endEndermanSpawnRate = pluginConfig.getInt("other.end-enderman-spawning");
         checkTamedEntityAttack = pluginConfig.getBoolean("other.check-tamed-entity-attack");
         creeperExplodeBlocks = pluginConfig.getBoolean("other.creeper-explode-blocks");
-        mobCreationDisabledWorlds = loadStringList("other.worlds-entity-creation-disabled");
+        mobCreationDisabledWorlds = loadStringListAsSet("other.worlds-entity-creation-disabled");
         allowBreeding = pluginConfig.getBoolean("other.allow-breeding");
         showBossBar = pluginConfig.getBoolean("other.show-boss-bar");
         return true;
     }
 
-    private List<String> loadStringList(String key) {
-        List<String> list = new ArrayList<>();
+    private Set<String> loadStringListAsSet(String key) {
+        Set<String> list = new HashSet<>();
         String input = pluginConfig.getString(key).toLowerCase();
         if (!input.trim().isEmpty()) {
             StringTokenizer tokenizer = new StringTokenizer(input, ", ");

@@ -56,6 +56,7 @@ public class Chicken extends WalkingAnimal {
 
     @Override
     public void initEntity() {
+        this.setMaxHealth(4);
         super.initEntity();
         if (this.namedTag.contains("EggLayTime")) {
             this.EggLayTime = this.namedTag.getInt("EggLayTime");
@@ -64,7 +65,6 @@ public class Chicken extends WalkingAnimal {
         }
         this.isChickenJockey = this.namedTag.contains("IsChickenJockey") && this.namedTag.getBoolean("IsChickenJockey");
 
-        this.setMaxHealth(4);
         this.noFallDamage = true;
     }
 

@@ -41,9 +41,9 @@ public class Warden extends WalkingMonster {
 
     @Override
     protected void initEntity() {
+        this.setMaxHealth(500);
         super.initEntity();
 
-        this.setMaxHealth(500);
         this.setDamage(new float[] { 0, 16, 30, 45 });
     }
 

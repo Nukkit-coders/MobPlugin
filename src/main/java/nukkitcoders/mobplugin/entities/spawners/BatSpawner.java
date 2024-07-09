@@ -18,7 +18,7 @@ public class BatSpawner extends AbstractEntitySpawner {
     }
 
     public void spawn(Player player, Position pos, Level level) {
-        if (level.getBlockLightAt((int) pos.x, (int) pos.y, (int) pos.z) <= 3) {
+        if (level.getBlockLightAt((int) pos.x, (int) pos.y + 1, (int) pos.z) <= 3) {
             if (!level.canBlockSeeSky(pos)) {
                 if (MobPlugin.isAnimalSpawningAllowedByTime(level)) {
                     this.spawnTask.createEntity("Bat", pos.add(0.5, 1, 0.5));

@@ -45,9 +45,9 @@ public class CaveSpider extends Spider implements EntityArthropod {
 
     @Override
     public void initEntity() {
+        this.setMaxHealth(12);
         super.initEntity();
 
-        this.setMaxHealth(12);
         this.setDamage(new float[] { 0, 2, 3, 3 });
     }
 

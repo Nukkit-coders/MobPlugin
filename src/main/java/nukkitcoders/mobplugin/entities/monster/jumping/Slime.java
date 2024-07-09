@@ -49,15 +49,11 @@ public class Slime extends JumpingMonster {
 
     @Override
     protected void initEntity() {
-        super.initEntity();
-
         if (this.namedTag.contains("Size")) {
             this.size = this.namedTag.getInt("Size");
         } else {
             this.size = Utils.rand(1, 3);
         }
-
-        this.setScale(0.51f + size * 0.51f);
 
         if (size == SIZE_BIG) {
             this.setMaxHealth(16);
@@ -66,6 +62,10 @@ public class Slime extends JumpingMonster {
         } else if (size == SIZE_SMALL) {
             this.setMaxHealth(1);
         }
+
+        super.initEntity();
+
+        this.setScale(0.51f + size * 0.51f);
 
         if (size == SIZE_BIG) {
             this.setDamage(new float[] { 0, 3, 4, 6 });

@@ -38,7 +38,7 @@ public class Tadpole extends Fish {
 
     @Override
     protected void initEntity() {
-        super.initEntity();
         this.setMaxHealth(6);
+        super.initEntity();
     }
 }

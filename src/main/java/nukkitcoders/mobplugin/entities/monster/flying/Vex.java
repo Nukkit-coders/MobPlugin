@@ -38,9 +38,9 @@ public class Vex extends FlyingMonster {
 
     @Override
     public void initEntity() {
+        this.setMaxHealth(14);
         super.initEntity();
         this.setDamage(new float[] { 0, 5, 9, 13 });
-        this.setMaxHealth(14);
     }
 
     @Override
