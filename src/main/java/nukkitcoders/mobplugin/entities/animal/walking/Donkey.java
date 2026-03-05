@@ -2,12 +2,13 @@ package nukkitcoders.mobplugin.entities.animal.walking;
 
 import cn.nukkit.Player;
 import cn.nukkit.entity.EntityCreature;
+import cn.nukkit.inventory.InventoryType;
 import cn.nukkit.item.Item;
 import cn.nukkit.level.format.FullChunk;
 import cn.nukkit.math.Vector3;
 import cn.nukkit.nbt.tag.CompoundTag;
+import cn.nukkit.utils.Utils;
 import nukkitcoders.mobplugin.entities.HorseBase;
-import nukkitcoders.mobplugin.utils.Utils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -63,7 +64,7 @@ public class Donkey extends HorseBase {
         if (canTarget && (creature instanceof Player)) {
             Player player = (Player) creature;
             return player.spawned && player.isAlive() && !player.closed &&
-                    this.isFeedItem(player.getInventory().getItemInHand()) && distance <= 49;
+                    this.hasFeedItem(player) && distance <= 49;
         }
         return false;
     }
@@ -114,6 +115,20 @@ public class Donkey extends HorseBase {
 
     public void setChested(boolean chested) {
         this.chested = chested;
-        this.setDataFlag(DATA_FLAGS, DATA_FLAG_CHESTED, chested);
+        this.setDataFlag(DATA_FLAGS, DATA_FLAG_CHESTED, chested, false);
+
+        if (chested) {
+            this.dataProperties
+                    .putByte(DATA_CONTAINER_TYPE, InventoryType.DONKEY.getNetworkType())
+                    .putInt(DATA_CONTAINER_BASE_SIZE, InventoryType.DONKEY.getDefaultSize())
+                    .putInt(DATA_CONTAINER_EXTRA_SLOTS_PER_STRENGTH, 0);
+        }
+
+        this.sendData(this.getViewers().values().toArray(new Player[0]));
+    }
+
+    @Override
+    public boolean canDespawn() {
+        return !this.isChested() && super.canDespawn();
     }
 }

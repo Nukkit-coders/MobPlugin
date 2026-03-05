@@ -49,6 +49,7 @@ public class CaveSpider extends Spider implements EntityArthropod {
         super.initEntity();
 
         this.setDamage(new float[] { 0, 2, 3, 3 });
+        this.setDataFlag(DATA_FLAGS_EXTENDED, DATA_FLAG_RENDER_WHEN_INVISIBLE, true);
     }
 
     @Override

@@ -13,20 +13,20 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  */
 public abstract class RouteFinder {
 
-    protected ArrayList<Node> nodes = new ArrayList<>();
-    protected boolean finished = false;
-    protected boolean searching = false;
+    protected final ArrayList<Node> nodes = new ArrayList<>();
+    protected boolean finished;
+    protected boolean searching;
 
-    protected int current = 0;
+    protected int current;
 
-    public WalkingEntity entity;
+    protected final WalkingEntity entity;
 
     protected Vector3 start;
     protected Vector3 destination;
 
     protected Level level;
 
-    protected boolean interrupt = false;
+    protected boolean interrupt;
 
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
@@ -88,7 +88,6 @@ public abstract class RouteFinder {
         } finally {
             lock.writeLock().unlock();
         }
-
     }
 
     public boolean isReachable() {
@@ -105,12 +104,11 @@ public abstract class RouteFinder {
         } finally {
             lock.readLock().unlock();
         }
-
     }
+
     public boolean hasCurrentNode() {
         return current < this.nodes.size();
     }
-
 
     public Level getLevel() {
         return this.level;
@@ -127,9 +125,12 @@ public abstract class RouteFinder {
     public boolean hasArrivedNode(Vector3 vec) {
         try {
             lock.readLock().lock();
-            if (this.hasNext() &&  this.getCurrentNode().getVector3()!=null) {
-                Vector3 cur = this.getCurrentNode().getVector3();
-                return vec.getX() == cur.getX() && vec.getZ() == cur.getZ();
+            Node node = this.getCurrentNode();
+            if (node != null) {
+                Vector3 cur = node.getVector3();
+                if (cur != null && this.hasNext()) {
+                    return vec.getX() == cur.getX() && vec.getZ() == cur.getZ();
+                }
             }
             return false;
         } finally {
@@ -149,7 +150,7 @@ public abstract class RouteFinder {
         }
     }
 
-    public abstract boolean search();
+    public abstract void search();
 
     public void research() {
         this.resetNodes();
@@ -175,14 +176,13 @@ public abstract class RouteFinder {
         } finally {
             lock.readLock().unlock();
         }
-
     }
 
     public boolean isInterrupted() {
         return this.interrupt;
     }
 
-    public boolean interrupt() {
-        return this.interrupt ^= true;
+    public void interrupt() {
+        this.interrupt ^= true;
     }
 }

@@ -8,12 +8,12 @@ import cn.nukkit.level.biome.EnumBiome;
 import nukkitcoders.mobplugin.AutoSpawnTask;
 import nukkitcoders.mobplugin.entities.BaseEntity;
 import nukkitcoders.mobplugin.entities.autospawn.AbstractEntitySpawner;
-import nukkitcoders.mobplugin.entities.monster.walking.Piglin;
+import nukkitcoders.mobplugin.entities.monster.walking.ZombiePigman;
 import nukkitcoders.mobplugin.utils.Utils;
 
-public class PiglinSpawner extends AbstractEntitySpawner {
+public class ZombifiedPiglinSpawner extends AbstractEntitySpawner {
 
-    public PiglinSpawner(AutoSpawnTask spawnTask) {
+    public ZombifiedPiglinSpawner(AutoSpawnTask spawnTask) {
         super(spawnTask);
     }
 
@@ -25,7 +25,7 @@ public class PiglinSpawner extends AbstractEntitySpawner {
                 int blockId = level.getBlockIdAt((int) pos.x, (int) pos.y, (int) pos.z);
                 if (blockId != Block.BLOCK_NETHER_WART_BLOCK) {
                     for (int i = 0; i < Utils.rand(2, 4); i++) {
-                        BaseEntity entity = this.spawnTask.createEntity("Piglin", pos.add(0.5, 1, 0.5));
+                        BaseEntity entity = this.spawnTask.createEntity("ZombiePigman", pos.add(0.5, 1, 0.5));
                         if (entity == null) {
                             return;
                         }
@@ -40,6 +40,6 @@ public class PiglinSpawner extends AbstractEntitySpawner {
 
     @Override
     public final int getEntityNetworkId() {
-        return Piglin.NETWORK_ID;
+        return ZombiePigman.NETWORK_ID;
     }
 }

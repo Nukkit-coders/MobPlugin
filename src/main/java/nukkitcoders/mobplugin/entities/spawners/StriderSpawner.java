@@ -16,9 +16,10 @@ public class StriderSpawner extends AbstractEntitySpawner {
 
     @Override
     public void spawn(Player player, Position pos, Level level) {
-        if (Utils.rand(1, 3) != 1) {
-            this.spawnTask.createEntity("Strider", pos.add(0.5, 1, 0.5));
+        if (Utils.rand(1, 5) != 1) {
+            return;
         }
+        this.spawnTask.createEntity("Strider", pos.add(0.5, 1, 0.5));
     }
 
     @Override

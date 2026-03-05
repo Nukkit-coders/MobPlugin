@@ -21,16 +21,6 @@ public abstract class SwimmingMonster extends SwimmingEntity implements Monster 
         super(chunk, nbt);
     }
 
-    @Override
-    public void setFollowTarget(Entity target) {
-        this.setFollowTarget(target, true);
-    }
-
-    public void setFollowTarget(Entity target, boolean attack) {
-        super.setFollowTarget(target);
-        this.canAttack = attack;
-    }
-
     public float getDamage() {
         return getDamage(null);
     }

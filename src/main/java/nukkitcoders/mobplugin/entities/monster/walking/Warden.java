@@ -40,6 +40,11 @@ public class Warden extends WalkingMonster {
     }
 
     @Override
+    protected float getKnockbackModifier() {
+        return 0f;
+    }
+
+    @Override
     protected void initEntity() {
         this.setMaxHealth(500);
         super.initEntity();
@@ -52,7 +57,7 @@ public class Warden extends WalkingMonster {
         if (this.attackDelay > 40 && this.distanceSquared(player) < 4) {
             this.attackDelay = 0;
             HashMap<EntityDamageEvent.DamageModifier, Float> damage = new HashMap<>();
-            damage.put(EntityDamageEvent.DamageModifier.BASE, (float) this.getDamage());
+            damage.put(EntityDamageEvent.DamageModifier.BASE, this.getDamage());
 
             if (player instanceof Player) {
                 float points = 0;

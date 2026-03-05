@@ -14,7 +14,7 @@ public class Salmon extends Fish {
     }
 
     @Override
-    int getBucketMeta() {
+    protected int getBucketMeta() {
         return 3;
     }
 

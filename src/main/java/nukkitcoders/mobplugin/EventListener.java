@@ -17,8 +17,8 @@ import cn.nukkit.event.entity.*;
 import cn.nukkit.event.player.PlayerDeathEvent;
 import cn.nukkit.event.player.PlayerInteractEvent;
 import cn.nukkit.event.player.PlayerMoveEvent;
-import cn.nukkit.event.server.DataPacketReceiveEvent;
 import cn.nukkit.item.Item;
+import cn.nukkit.item.ItemID;
 import cn.nukkit.item.ItemSkull;
 import cn.nukkit.item.enchantment.Enchantment;
 import cn.nukkit.lang.TranslationContainer;
@@ -29,16 +29,10 @@ import cn.nukkit.math.BlockFace;
 import cn.nukkit.math.SimpleAxisAlignedBB;
 import cn.nukkit.nbt.tag.CompoundTag;
 import cn.nukkit.network.protocol.EntityEventPacket;
-import cn.nukkit.network.protocol.PlayerAuthInputPacket;
 import cn.nukkit.network.protocol.TextPacket;
-
 import nukkitcoders.mobplugin.entities.BaseEntity;
-import nukkitcoders.mobplugin.entities.HorseBase;
 import nukkitcoders.mobplugin.entities.Tameable;
 import nukkitcoders.mobplugin.entities.animal.walking.Chicken;
-import nukkitcoders.mobplugin.entities.animal.walking.Llama;
-import nukkitcoders.mobplugin.entities.animal.walking.Pig;
-import nukkitcoders.mobplugin.entities.animal.walking.Strider;
 import nukkitcoders.mobplugin.entities.block.BlockEntitySpawner;
 import nukkitcoders.mobplugin.entities.monster.WalkingMonster;
 import nukkitcoders.mobplugin.entities.monster.flying.Wither;
@@ -61,6 +55,9 @@ public class EventListener implements Listener {
             this.handleAttackedEntityAngry(ev.getEntity());
             if (ev.getEntity() instanceof BaseEntity && ev.getEntity().getLevel().getGameRules().getBoolean(GameRule.DO_MOB_LOOT)) {
                 BaseEntity baseEntity = (BaseEntity) ev.getEntity();
+                if (baseEntity.isLeashed()) {
+                    baseEntity.getLevel().dropItem(baseEntity, Item.get(ItemID.LEAD));
+                }
                 if (!(baseEntity.getLastDamageCause() instanceof EntityDamageByEntityEvent)) {
                     return;
                 }
@@ -121,7 +118,13 @@ public class EventListener implements Listener {
                 return;
             }
 
-            if (((Tameable) baseEntity).getOwner() == null) {
+            if (!((Tameable) baseEntity).hasOwner()) {
+                return;
+            }
+
+            Player owner = ((Tameable) baseEntity).getOwner();
+
+            if (owner == null) {
                 return;
             }
 
@@ -148,7 +151,7 @@ public class EventListener implements Listener {
             tameDeathMessage.message = deathMessage.getText();
             tameDeathMessage.parameters = deathMessage.getParameters();
             tameDeathMessage.isLocalized = true;
-            ((Tameable) baseEntity).getOwner().dataPacket(tameDeathMessage);
+            owner.dataPacket(tameDeathMessage);
         }
     }
 
@@ -414,28 +417,6 @@ public class EventListener implements Listener {
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
-    public void DataPacketReceiveEvent(DataPacketReceiveEvent ev) {
-        if (ev.getPacket() instanceof PlayerAuthInputPacket) {
-            Player p = ev.getPlayer();
-            if (!p.locallyInitialized) {
-                return;
-            }
-            PlayerAuthInputPacket pk = (PlayerAuthInputPacket) ev.getPacket();
-            double inputX = pk.getMotion().getX();
-            double inputY = pk.getMotion().getY();
-            if (inputX >= -1.0 && inputX <= 1.0 && inputY >= -1.0 && inputY <= 1.0) {
-                if (p.riding instanceof HorseBase && !(p.riding instanceof Llama)) {
-                    ((HorseBase) p.riding).onPlayerInput(p, inputX, inputY);
-                } else if (p.riding instanceof Pig) {
-                    ((Pig) p.riding).onPlayerInput(p, inputX, inputY);
-                } else if (p.riding instanceof Strider) {
-                    ((Strider) p.riding).onPlayerInput(p, inputX, inputY);
-                }
-            }
-        }
-    }
-
-    @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
     public void PlayerMoveEvent(PlayerMoveEvent ev) {
         Player player = ev.getPlayer();
         if (player.ticksLived % 20 == 0) {
@@ -483,7 +464,7 @@ public class EventListener implements Listener {
 
                 if (entity instanceof Wolf) {
                     if (((Wolf) entity).hasOwner()) {
-                        if (((Wolf) entity).getOwner().equals(ev.getDamager())) {
+                        if (((Wolf) entity).isOwner(ev.getDamager())) {
                             ((Wolf) entity).isAngryTo = ev.getEntity().getId();
                             ((Wolf) entity).setAngry(true);
                         }

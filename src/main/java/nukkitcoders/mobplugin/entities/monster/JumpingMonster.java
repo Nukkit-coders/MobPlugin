@@ -1,5 +1,6 @@
 package nukkitcoders.mobplugin.entities.monster;
 
+import cn.nukkit.Player;
 import cn.nukkit.Server;
 import cn.nukkit.entity.Entity;
 import cn.nukkit.level.format.FullChunk;
@@ -18,16 +19,6 @@ public abstract class JumpingMonster extends JumpingEntity implements Monster {
 
     public JumpingMonster(FullChunk chunk, CompoundTag nbt) {
         super(chunk, nbt);
-    }
-
-    @Override
-    public void setFollowTarget(Entity target) {
-        this.setFollowTarget(target, true);
-    }
-
-    public void setFollowTarget(Entity target, boolean attack) {
-        super.setFollowTarget(target);
-        this.canAttack = attack;
     }
 
     public float getDamage() {
@@ -150,7 +141,7 @@ public abstract class JumpingMonster extends JumpingEntity implements Monster {
         this.entityBaseTick(tickDiff);
 
         Vector3 target = this.updateMove(tickDiff);
-        if (target instanceof Entity) {
+        if ((!this.isFriendly() || !(target instanceof Player)) && target instanceof Entity) {
             Entity entity = (Entity) target;
             if (!entity.closed && (target != this.followTarget || this.canAttack)) {
                 this.attackEntity(entity);

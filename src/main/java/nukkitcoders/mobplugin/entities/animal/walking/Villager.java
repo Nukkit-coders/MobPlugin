@@ -7,8 +7,6 @@ import cn.nukkit.level.format.FullChunk;
 import cn.nukkit.nbt.tag.CompoundTag;
 import nukkitcoders.mobplugin.entities.animal.WalkingAnimal;
 
-import static cn.nukkit.entity.passive.EntityVillagerV1.PROFESSION_GENERIC;
-
 public class Villager extends WalkingAnimal {
 
     public static final int NETWORK_ID = 15;
@@ -35,7 +33,7 @@ public class Villager extends WalkingAnimal {
         if (this.isBaby()) {
             return 0.975f;
         }
-        return 1.95f;
+        return 1.9f;
     }
 
     @Override
@@ -47,10 +45,6 @@ public class Villager extends WalkingAnimal {
     public void initEntity() {
         this.setMaxHealth(10);
         super.initEntity();
-
-        if (!this.namedTag.contains("Profession")) {
-            this.setProfession(PROFESSION_GENERIC);
-        }
     }
 
     public int getProfession() {

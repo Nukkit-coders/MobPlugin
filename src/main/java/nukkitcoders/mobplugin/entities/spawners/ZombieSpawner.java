@@ -18,20 +18,25 @@ public class ZombieSpawner extends AbstractEntitySpawner {
 
     @Override
     public void spawn(Player player, Position pos, Level level) {
-        if (level.getBlockLightAt((int) pos.x, (int) pos.y + 1, (int) pos.z) <= 7) {
-            if (MobPlugin.isMobSpawningAllowedByTime(level)) {
-                if (Utils.rand(1, 40) == 30) {
-                    BaseEntity entity = this.spawnTask.createEntity("ZombieVillager", pos.add(0.5, 1, 0.5));
-                    if (entity == null) return;
-                    if (Utils.rand(1, 20) == 1) {
-                        entity.setBaby(true);
-                    }
-                } else {
-                    BaseEntity entity = this.spawnTask.createEntity("Zombie", pos.add(0.5, 1, 0.5));
-                    if (entity == null) return;
-                    if (Utils.rand(1, 20) == 1) {
-                        entity.setBaby(true);
-                    }
+        if (!MobPlugin.isMobSpawningAllowedByTime(level)) {
+            return;
+        }
+        if (level.getBlockLightAt((int) pos.x, (int) pos.y + 1, (int) pos.z) == 0) {
+            if (Utils.rand(1, 40) == 30) {
+                BaseEntity entity = this.spawnTask.createEntity("ZombieVillager", pos.add(0.5, 1, 0.5));
+                if (entity == null) {
+                    return;
+                }
+                if (Utils.rand(1, 20) == 1) {
+                    entity.setBaby(true);
+                }
+            } else {
+                BaseEntity entity = this.spawnTask.createEntity("Zombie", pos.add(0.5, 1, 0.5));
+                if (entity == null) {
+                    return;
+                }
+                if (Utils.rand(1, 20) == 1) {
+                    entity.setBaby(true);
                 }
             }
         }

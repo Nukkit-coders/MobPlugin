@@ -1,6 +1,7 @@
 package nukkitcoders.mobplugin.entities;
 
 import cn.nukkit.Player;
+import cn.nukkit.entity.Entity;
 
 /**
  * Interface that is implemented in tameable entities
@@ -8,8 +9,6 @@ import cn.nukkit.Player;
  * @author <a href="mailto:kniffman@googlemail.com">Michael Gertz</a>
  */
 public interface Tameable {
-
-    String NAMED_TAG_OWNER = "Owner";
 
     String NAMED_TAG_OWNER_UUID = "OwnerUUID";
 
@@ -28,4 +27,8 @@ public interface Tameable {
     boolean isSitting();
 
     void setSitting(boolean sitting);
+
+    default boolean isOwner(Entity entity) {
+        return entity instanceof Player && ((Player) entity).getUniqueId().toString().equals(this.getOwnerUUID());
+    }
 }

@@ -37,4 +37,9 @@ public class Allay extends FlyingAnimal {
     public int getKillExperience() {
         return 0;
     }
+
+    @Override
+    public boolean canDespawn() {
+        return false;
+    }
 }

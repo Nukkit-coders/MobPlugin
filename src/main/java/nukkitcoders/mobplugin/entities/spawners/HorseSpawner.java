@@ -19,20 +19,23 @@ public class HorseSpawner extends AbstractEntitySpawner {
 
     @Override
     public void spawn(Player player, Position pos, Level level) {
-        if (Utils.rand(1, 3) != 1) {
+        if (Utils.rand(1, 50) != 1) {
+            return;
+        }
+        if (!MobPlugin.isAnimalSpawningAllowedByTime(level)) {
             return;
         }
         int blockId = level.getBlockIdAt((int) pos.x, (int) pos.y, (int) pos.z);
             if (blockId == Block.GRASS || blockId == Block.SNOW_LAYER) {
             final int biomeId = level.getBiomeId((int) pos.x, (int) pos.z);
             if (biomeId == 1 || biomeId == 35 || biomeId == 128 || biomeId == 129) {
-                if (MobPlugin.isAnimalSpawningAllowedByTime(level)) {
-                    for (int i = 0; i < Utils.rand(2, 6); i++) {
-                        BaseEntity entity = this.spawnTask.createEntity("Horse", pos.add(0.5, 1, 0.5));
-                        if (entity == null) return;
-                        if (Utils.rand(1, 20) == 1) {
-                            entity.setBaby(true);
-                        }
+                for (int i = 0; i < Utils.rand(2, 6); i++) {
+                    BaseEntity entity = this.spawnTask.createEntity("Horse", pos.add(0.5, 1, 0.5));
+                    if (entity == null) {
+                        return;
+                    }
+                    if (Utils.rand(1, 20) == 1) {
+                        entity.setBaby(true);
                     }
                 }
             }

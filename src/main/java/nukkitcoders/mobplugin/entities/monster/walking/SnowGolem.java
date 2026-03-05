@@ -1,16 +1,19 @@
 package nukkitcoders.mobplugin.entities.monster.walking;
 
 import cn.nukkit.Player;
+import cn.nukkit.block.Block;
 import cn.nukkit.entity.Entity;
 import cn.nukkit.entity.EntityCreature;
+import cn.nukkit.entity.EntityLiving;
 import cn.nukkit.entity.projectile.EntitySnowball;
 import cn.nukkit.event.entity.EntityDamageByEntityEvent;
 import cn.nukkit.event.entity.EntityDamageEvent;
 import cn.nukkit.event.entity.ProjectileLaunchEvent;
 import cn.nukkit.item.Item;
+import cn.nukkit.level.GameRule;
 import cn.nukkit.level.Level;
-import cn.nukkit.level.Location;
 import cn.nukkit.level.Sound;
+import cn.nukkit.level.biome.EnumBiome;
 import cn.nukkit.level.format.FullChunk;
 import cn.nukkit.math.Vector3;
 import cn.nukkit.nbt.tag.CompoundTag;
@@ -26,6 +29,8 @@ public class SnowGolem extends WalkingMonster {
     public static final int NETWORK_ID = 21;
 
     public boolean sheared = false;
+    private boolean createSnow;
+    private int cachedBiome;
 
     public SnowGolem(FullChunk chunk, CompoundTag nbt) {
         super(chunk, nbt);
@@ -56,47 +61,42 @@ public class SnowGolem extends WalkingMonster {
         if (this.namedTag.getBoolean("Sheared")) {
             this.shear(true);
         }
+
+        this.createSnow = this.level.getGameRules().getBoolean(GameRule.MOB_GRIEFING);
+        if (this.createSnow) {
+            this.cachedBiome = chunk.getBiomeId(getFloorX() & 0x0f, getFloorZ() & 0x0f);
+        }
     }
 
     @Override
     public boolean targetOption(EntityCreature creature, double distance) {
-        return (!(creature instanceof Player) || creature.getId() == this.isAngryTo) && creature.isAlive() && distance <= 100;
+        return (!(creature instanceof Player) || creature.getId() == this.isAngryTo) && creature.isAlive() && distance <= 256;
     }
 
     @Override
     public void attackEntity(Entity player) {
         if (this.attackDelay > 23 && Utils.rand(1, 32) < 4 && this.distanceSquared(player) <= 55) {
-            this.attackDelay = 0;
-
-            double f = 1.2;
-            double yaw = this.yaw + Utils.rand(-4.0, 4.0);
-            double pitch = this.pitch + Utils.rand(-4.0, 4.0);
-            Location location = new Location(this.x + (-Math.sin(Math.toRadians(yaw)) * Math.cos(Math.toRadians(pitch)) * 0.5), this.y + this.getEyeHeight(),
-                    this.z + (Math.cos(Math.toRadians(yaw)) * Math.cos(Math.toRadians(pitch)) * 0.5), yaw, pitch, this.level);
-            Entity k = Entity.createEntity("Snowball", location, this);
-            if (k == null) {
+            if (!this.seesTarget(player)) {
                 return;
             }
 
-            EntitySnowball snowball = (EntitySnowball) k;
-            double a = -Math.sin(Math.toRadians(yaw)) * Math.cos(Math.toRadians(pitch)) * f * f;
-            double b = -Math.sin(Math.toRadians(pitch)) * f * f;
-            double c = Math.cos(Math.toRadians(yaw)) * Math.cos(Math.toRadians(pitch)) * f * f;
-            snowball.setMotion(new Vector3(a, b,
-                    c));
+            this.attackDelay = 0;
 
-            Vector3 motion = new Vector3(a, b,
-                    c).multiply(f);
-            snowball.setMotion(motion);
+            EntitySnowball shot = (EntitySnowball) Entity.createEntity("Snowball", this.add(0, this.getEyeHeight(), 0), this);
 
-            ProjectileLaunchEvent launch = new ProjectileLaunchEvent(snowball);
+            if (Utils.hasCollisionBlocks(shot.level, shot, shot.boundingBox)) {
+                shot.close();
+                return;
+            }
+
+            shot.setMotion(player.add(0, 0.3, 0).subtract(this).normalize().multiply(1.2));
+
+            ProjectileLaunchEvent launch = new ProjectileLaunchEvent(shot);
             this.server.getPluginManager().callEvent(launch);
             if (launch.isCancelled()) {
-                if (this.stayTime > 0 || this.distance(this.target) <= ((this.getWidth()) / 2 + 0.05) * nearbyDistanceMultiplier()) {
-                    snowball.close();
-                }
+                shot.close();
             } else {
-                snowball.spawnToAll();
+                shot.spawnToAll();
                 this.level.addSound(this, Sound.MOB_SNOWGOLEM_SHOOT);
             }
         }
@@ -106,9 +106,7 @@ public class SnowGolem extends WalkingMonster {
     public Item[] getDrops() {
         List<Item> drops = new ArrayList<>();
 
-        for (int i = 0; i < Utils.rand(0, 15); i++) {
-            drops.add(Item.get(Item.SNOWBALL, 0, 1));
-        }
+        drops.add(Item.get(Item.SNOWBALL, 0, Utils.rand(0, 15)));
 
         return drops.toArray(new Item[0]);
     }
@@ -124,8 +122,8 @@ public class SnowGolem extends WalkingMonster {
     }
 
     @Override
-    public int nearbyDistanceMultiplier() {
-        return 10;
+    protected int nearbyDistanceMultiplier() {
+        return target instanceof EntityLiving || followTarget instanceof EntityLiving ? 6 : 1;
     }
 
     @Override
@@ -153,11 +151,26 @@ public class SnowGolem extends WalkingMonster {
 
     @Override
     public boolean entityBaseTick(int tickDiff) {
-        if (this.age % 20 == 0 && (this.level.getDimension() == Level.DIMENSION_NETHER || (this.level.isRaining() && this.level.canBlockSeeSky(this)))) {
+        if (this.age % 20 == 0 && (this.level.getDimension() == Level.DIMENSION_NETHER || (this.level.isRaining() && this.canSeeSky() && !EnumBiome.getBiome(this.level.getBiomeId((int) x, (int) z)).isFreezing()))) {
             this.attack(new EntityDamageEvent(this, EntityDamageEvent.DamageCause.FIRE_TICK, 1));
         }
 
-        return super.entityBaseTick(tickDiff);
+        boolean hasUpdate = super.entityBaseTick(tickDiff);
+        if (!this.closed && this.createSnow && this.age % 10 == 0) {
+            if (this.age % 400 == 0) {
+                this.cachedBiome = chunk.getBiomeId(getFloorX() & 0x0f, getFloorZ() & 0x0f);
+            }
+            if (cachedBiome != 2 && cachedBiome != 8  && cachedBiome != 21 && cachedBiome != 22 && cachedBiome != 23 && cachedBiome != 37 && cachedBiome != 38 && cachedBiome != 39
+                    && cachedBiome != 130 && cachedBiome != 149 && cachedBiome != 151 && cachedBiome != 165 && cachedBiome != 166 && cachedBiome != 167) {
+                int bid = level.getBlockIdAt(this.chunk, getFloorX(), getFloorY(), getFloorZ());
+                if (Block.isWater(bid)) {
+                    this.attack(new EntityDamageEvent(this, EntityDamageEvent.DamageCause.SUFFOCATION, 1));
+                } else if (bid == Block.AIR && !Block.transparent[level.getBlockIdAt(this.chunk, getFloorX(), getFloorY() - 1, getFloorZ())]) {
+                    level.setBlockAt(getFloorX(), getFloorY(), getFloorZ(), Block.SNOW_LAYER, 0);
+                }
+            }
+        }
+        return hasUpdate;
     }
 
     @Override
@@ -174,6 +187,16 @@ public class SnowGolem extends WalkingMonster {
 
     @Override
     public boolean canTarget(Entity entity) {
-        return entity.getId() == this.isAngryTo;
+        return !entity.closed && entity.getId() == this.isAngryTo;
+    }
+
+    @Override
+    protected float getFreezingDamage() {
+        return 0f;
+    }
+
+    @Override
+    public boolean canDespawn() {
+        return false;
     }
 }

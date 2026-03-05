@@ -1,12 +1,18 @@
 package nukkitcoders.mobplugin.entities.animal;
 
 import cn.nukkit.Player;
+import cn.nukkit.entity.Entity;
+import cn.nukkit.event.entity.EntityDamageEvent;
+import cn.nukkit.item.Item;
 import cn.nukkit.level.format.FullChunk;
 import cn.nukkit.math.Vector3;
 import cn.nukkit.nbt.tag.CompoundTag;
 import nukkitcoders.mobplugin.entities.JumpingEntity;
+import nukkitcoders.mobplugin.utils.Utils;
 
 public abstract class JumpingAnimal extends JumpingEntity implements Animal {
+
+    private int panicTicks = 0;
 
     public JumpingAnimal(FullChunk chunk, CompoundTag nbt) {
         super(chunk, nbt);
@@ -14,12 +20,22 @@ public abstract class JumpingAnimal extends JumpingEntity implements Animal {
 
     @Override
     public boolean onUpdate(int currentTick) {
+        if (this.closed) {
+            return false;
+        }
         if (!this.isAlive()) {
             if (++this.deadTicks >= 23) {
                 this.close();
                 return false;
             }
             return true;
+        }
+
+        if (this.panicTicks > 0) {
+            this.panicTicks--;
+            if (panicTicks == 0) {
+                this.doPanic(false);
+            }
         }
 
         int tickDiff = currentTick - this.lastUpdate;
@@ -33,9 +49,60 @@ public abstract class JumpingAnimal extends JumpingEntity implements Animal {
                 this.y = this.lastY;
                 this.z = this.lastZ;
             }
-        } else if (target != null && this.distanceSquared(target) <= 1) {
-            this.moveTime = 0;
         }
+        return true;
+    }
+
+    public int getPanicTicks() {
+        return this.panicTicks;
+    }
+
+    public void doPanic(boolean panic) {
+        if (panic) {
+            int time = Utils.rand(60, 100);
+            this.panicTicks = time;
+            this.stayTime = 0;
+            this.moveTime = time;
+            this.moveMultiplier = 1.8f;
+        } else {
+            this.panicTicks = 0;
+            this.moveMultiplier = 1.0f;
+        }
+    }
+
+    @Override
+    public boolean attack(EntityDamageEvent ev) {
+        boolean result = super.attack(ev);
+
+        if (result && !ev.isCancelled()) {
+            this.doPanic(true);
+        }
+
+        return result;
+    }
+
+    @Override
+    public boolean canTarget(Entity entity) {
+        return (this.isInLove() || entity instanceof Player) && this.getPanicTicks() <= 0;
+    }
+
+    @Override
+    public boolean onInteract(Player player, Item item, Vector3 clickedPos) {
+        if (!this.isLeashed()) {
+            if (item.getId() == Item.LEAD) {
+                this.leash(player);
+                return true; // onInteract: true = decrease count
+            }
+        } else {
+            this.unleash();
+            return false;
+        }
+
+        return super.onInteract(player, item, clickedPos);
+    }
+
+    @Override
+    public boolean isFriendly() {
         return true;
     }
 }

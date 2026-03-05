@@ -50,6 +50,7 @@ public class Phantom extends FlyingMonster implements EntitySmite {
         this.setDamage(new float[] { 0, 4, 6, 9 });
     }
 
+    @Override
     public boolean targetOption(EntityCreature creature, double distance) {
         if (creature instanceof Player) {
             Player player = (Player) creature;

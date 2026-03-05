@@ -8,8 +8,8 @@ import cn.nukkit.item.Item;
 import cn.nukkit.item.ItemSkull;
 import cn.nukkit.level.Level;
 import cn.nukkit.math.AxisAlignedBB;
+import cn.nukkit.math.BlockFace;
 import cn.nukkit.math.NukkitMath;
-import cn.nukkit.math.Vector3;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.ints.IntSet;
 import nukkitcoders.mobplugin.entities.monster.walking.Creeper;
@@ -24,9 +24,7 @@ import java.util.SplittableRandom;
  */
 public class Utils {
 
-    public static final SplittableRandom random = new SplittableRandom();
-    public static final int ACCORDING_X_OBTAIN_Y = 0;
-    public static final int ACCORDING_Y_OBTAIN_X = 1;
+    private static final SplittableRandom random = new SplittableRandom();
     public static final IntSet monstersList = new IntOpenHashSet(new int[]{EntityBlaze.NETWORK_ID, EntityCaveSpider.NETWORK_ID, EntityCreeper.NETWORK_ID, EntityDrowned.NETWORK_ID, EntityElderGuardian.NETWORK_ID, EntityEnderman.NETWORK_ID, EntityEndermite.NETWORK_ID, EntityEvoker.NETWORK_ID, EntityGhast.NETWORK_ID, EntityGuardian.NETWORK_ID, EntityHoglin.NETWORK_ID, EntityHusk.NETWORK_ID, EntityPiglinBrute.NETWORK_ID, EntityPillager.NETWORK_ID, EntityRavager.NETWORK_ID, EntityShulker.NETWORK_ID, EntitySilverfish.NETWORK_ID, EntitySkeleton.NETWORK_ID, EntitySlime.NETWORK_ID, EntitySpider.NETWORK_ID, EntityStray.NETWORK_ID, EntityVex.NETWORK_ID, EntityVindicator.NETWORK_ID, EntityWitch.NETWORK_ID, EntityWither.NETWORK_ID, EntityWitherSkeleton.NETWORK_ID, EntityZoglin.NETWORK_ID, EntityZombie.NETWORK_ID, EntityZombiePigman.NETWORK_ID, EntityZombieVillagerV1.NETWORK_ID, EntityZombieVillager.NETWORK_ID});
 
     public static int rand(int min, int max) {
@@ -47,38 +45,13 @@ public class Utils {
         return random.nextBoolean();
     }
 
-    public static double calLinearFunction(Vector3 pos1, Vector3 pos2, double element, int type) {
-        if (pos1.getFloorY() != pos2.getFloorY()) {
-            return Double.MAX_VALUE;
-        }
-        if (pos1.getX() == pos2.getX()) {
-            if (type == ACCORDING_Y_OBTAIN_X) {
-                return pos1.getX();
-            } else {
-                return Double.MAX_VALUE;
-            }
-        } else if (pos1.getZ() == pos2.getZ()) {
-            if (type == ACCORDING_X_OBTAIN_Y) {
-                return pos1.getZ();
-            } else {
-                return Double.MAX_VALUE;
-            }
-        } else {
-            if (type == ACCORDING_X_OBTAIN_Y) {
-                return (element - pos1.getX()) * (pos1.getZ() - pos2.getZ()) / (pos1.getX() - pos2.getX()) + pos1.getZ();
-            } else {
-                return (element - pos1.getZ()) * (pos1.getX() - pos2.getX()) / (pos1.getZ() - pos2.getZ()) + pos1.getX();
-            }
-        }
-    }
-
     public static boolean entityInsideWaterFast(Entity ent) {
         double y = ent.y + ent.getEyeHeight();
-        int b = ent.level.getBlockIdAt(NukkitMath.floorDouble(ent.x), NukkitMath.floorDouble(y), NukkitMath.floorDouble(ent.z));
-        return b == BlockID.WATER || b == BlockID.STILL_WATER;
+        int b = ent.level.getBlockIdAt(ent.chunk, NukkitMath.floorDouble(ent.x), NukkitMath.floorDouble(y), NukkitMath.floorDouble(ent.z));
+        return b == BlockID.WATER || b == BlockID.STILL_WATER || b == BlockID.BLOCK_KELP || b == BlockID.SEAGRASS || b == BlockID.BUBBLE_COLUMN;
     }
 
-    public static boolean hasCollisionBlocks(Level level, AxisAlignedBB bb) {
+    public static boolean hasCollisionBlocks(Level level, Entity entity, AxisAlignedBB bb) {
         int minX = NukkitMath.floorDouble(bb.getMinX());
         int minY = NukkitMath.floorDouble(bb.getMinY());
         int minZ = NukkitMath.floorDouble(bb.getMinZ());
@@ -89,8 +62,8 @@ public class Utils {
         for (int z = minZ; z <= maxZ; ++z) {
             for (int x = minX; x <= maxX; ++x) {
                 for (int y = minY; y <= maxY; ++y) {
-                    Block block = level.getBlock(x, y, z, false);
-                    if (block != null && block.getId() != 0 && block.collidesWithBB(bb)) {
+                    Block block = level.getBlock(entity.chunk, x, y, z, false);
+                    if (block.getId() != 0 && block.collidesWithBB(bb)) {
                         return true;
                     }
                 }
@@ -98,6 +71,10 @@ public class Utils {
         }
 
         return false;
+    }
+
+    public static Block getSide(Entity ent, Block block, BlockFace face) {
+        return block.getLevel().getBlock(ent.chunk, (int) block.x + face.getXOffset(), (int) block.y + face.getYOffset(), (int) block.z + face.getZOffset(), true);
     }
 
     public static Item getMobHead(int mob) {
@@ -113,5 +90,34 @@ public class Utils {
             default:
                 return null;
         }
+    }
+
+    public static double sign(double d) {
+        if (d > 0) {
+            return 1;
+        }
+
+        if (d < 0) {
+            return -1;
+        }
+
+        return 0;
+    }
+
+    public static double boundary(double start, double distance) {
+        if (distance == 0) {
+            return Double.POSITIVE_INFINITY;
+        }
+
+        if (distance < 0) {
+            start = -start;
+            distance = -distance;
+
+            if (Math.floor(start) == start) {
+                return 0;
+            }
+        }
+
+        return (1 - (start - Math.floor(start))) / distance;
     }
 }

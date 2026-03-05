@@ -18,7 +18,7 @@ public class CowSpawner extends AbstractEntitySpawner {
     }
 
     public void spawn(Player player, Position pos, Level level) {
-        if (Utils.rand(1, 3) != 1) {
+        if (Utils.rand(1, 10) != 1) {
             return;
         }
         if (MobPlugin.isAnimalSpawningAllowedByTime(level)) {
@@ -26,7 +26,9 @@ public class CowSpawner extends AbstractEntitySpawner {
             if (blockId == Block.GRASS || blockId == Block.SNOW_LAYER) {
                 for (int i = 0; i < Utils.rand(2, 3); i++) {
                     BaseEntity entity = this.spawnTask.createEntity("Cow", pos.add(0.5, 1, 0.5));
-                    if (entity == null) return;
+                    if (entity == null) {
+                        return;
+                    }
                     if (Utils.rand(1, 20) == 1) {
                         entity.setBaby(true);
                     }

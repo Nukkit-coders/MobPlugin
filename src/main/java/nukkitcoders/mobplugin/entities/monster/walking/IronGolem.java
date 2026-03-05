@@ -9,8 +9,11 @@ import cn.nukkit.entity.passive.EntityWolf;
 import cn.nukkit.event.entity.EntityDamageByEntityEvent;
 import cn.nukkit.event.entity.EntityDamageEvent;
 import cn.nukkit.item.Item;
+import cn.nukkit.item.ItemID;
 import cn.nukkit.level.format.FullChunk;
+import cn.nukkit.math.Vector3;
 import cn.nukkit.nbt.tag.CompoundTag;
+import cn.nukkit.network.protocol.LevelSoundEventPacket;
 import cn.nukkit.network.protocol.UpdateAttributesPacket;
 import nukkitcoders.mobplugin.entities.monster.WalkingMonster;
 import nukkitcoders.mobplugin.utils.Utils;
@@ -49,6 +52,11 @@ public class IronGolem extends WalkingMonster {
     }
 
     @Override
+    protected float getKnockbackModifier() {
+        return 0f;
+    }
+
+    @Override
     public void initEntity() {
         this.setMaxHealth(100);
         super.initEntity();
@@ -77,8 +85,9 @@ public class IronGolem extends WalkingMonster {
         }
     }
 
+    @Override
     public boolean targetOption(EntityCreature creature, double distance) {
-        return (!(creature instanceof Player) || creature.getId() == this.isAngryTo) && !(creature instanceof EntityWolf) && creature.isAlive() && distance <= 100;
+        return (!(creature instanceof Player) || creature.getId() == this.isAngryTo) && !(creature instanceof EntityWolf) && creature.isAlive() && distance <= 256;
     }
 
     @Override
@@ -121,7 +130,7 @@ public class IronGolem extends WalkingMonster {
 
     @Override
     public boolean canTarget(Entity entity) {
-        return entity.getId() == this.isAngryTo;
+        return !entity.closed && entity.getId() == this.isAngryTo;
     }
 
     @Override
@@ -146,5 +155,15 @@ public class IronGolem extends WalkingMonster {
             pk.entityId = this.id;
             Server.broadcastPacket(this.getViewers().values(), pk);
         }
+    }
+
+    @Override
+    public boolean onInteract(Player player, Item item, Vector3 clickedPos) {
+        if (item.getId() == ItemID.IRON_INGOT && this.health < this.getRealMaxHealth() && this.isAlive()) {
+            this.heal(25f);
+            this.level.addLevelSoundEvent(this, LevelSoundEventPacket.SOUND_REPAIR_IRON_GOLEM);
+            return true; // onInteract: true = decrease count
+        }
+        return super.onInteract(player, item, clickedPos);
     }
 }

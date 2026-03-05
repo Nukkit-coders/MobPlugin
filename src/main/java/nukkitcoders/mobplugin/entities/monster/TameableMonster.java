@@ -7,14 +7,13 @@ import cn.nukkit.math.Vector3;
 import cn.nukkit.nbt.tag.CompoundTag;
 import nukkitcoders.mobplugin.entities.Tameable;
 
+import java.util.Optional;
+import java.util.UUID;
+
 /**
  * @author <a href="mailto:kniffman@googlemail.com">Michael Gertz</a>
  */
 public abstract class TameableMonster extends WalkingMonster implements Tameable {
-
-    private Player owner = null;
-
-    private String ownerUUID = "";
 
     private boolean sitting;
 
@@ -27,56 +26,55 @@ public abstract class TameableMonster extends WalkingMonster implements Tameable
         super.initEntity();
 
         if (this.namedTag != null) {
-            String ownerName = namedTag.getString(NAMED_TAG_OWNER);
-            if (ownerName != null && !ownerName.isEmpty()) {
-                Player player = this.getServer().getPlayerExact(ownerName);
-                if (player != null) {
-                    this.setOwner(player);
-                }
-                this.setSitting(namedTag.getBoolean(NAMED_TAG_SITTING));
+            String owner = this.getOwnerUUID();
+            if (owner != null && !owner.isEmpty()) {
+                Optional<Player> player = this.getServer().getPlayer(UUID.fromString(owner));
+                player.ifPresent(this::setOwner);
+
+                this.setSitting(this.namedTag.getBoolean(NAMED_TAG_SITTING));
+
+                this.pitch = 0;
             }
         }
-
     }
 
     @Override
     public void saveNBT() {
         super.saveNBT();
-        namedTag.putBoolean(NAMED_TAG_SITTING, this.sitting);
-        if (this.owner != null) {
-            namedTag.putString(NAMED_TAG_OWNER, this.owner.getName());
-            namedTag.putString(NAMED_TAG_OWNER_UUID, owner.getUniqueId().toString());
-        }
+
+        this.namedTag.putBoolean(NAMED_TAG_SITTING, this.sitting);
     }
 
     @Override
     public Player getOwner() {
-        this.checkOwner();
-        return this.owner;
+        String owner = this.getOwnerUUID();
+        if (owner != null && !owner.isEmpty()) {
+            Optional<Player> player = this.getServer().getPlayer(UUID.fromString(owner));
+            if (player.isPresent()) {
+                Player p = player.get();
+
+                if (this.getDataPropertyLong(DATA_OWNER_EID) != p.getId()) { // Update
+                    this.setDataProperty(new LongEntityData(DATA_OWNER_EID, p.getId()));
+                    this.setDataFlag(DATA_FLAGS, DATA_FLAG_TAMED, true);
+
+                }
+                return p;
+            }
+        }
+
+        return null;
     }
 
     @Override
     public boolean hasOwner() {
-        return hasOwner(true);
-    }
-    
-    public boolean hasOwner(boolean checkOnline) {
-        if (checkOnline) {
-            this.checkOwner();
-            return this.owner != null;
-        } else {
-            if (this.namedTag != null) {
-                String ownerName = namedTag.getString(NAMED_TAG_OWNER);
-                return ownerName != null && !ownerName.isEmpty();
-            }
-            return false;
-        }
+        return this.namedTag.contains(NAMED_TAG_OWNER_UUID);
     }
 
+    @Override
     public void setOwner(Player player) {
-        this.owner = player;
+        this.setOwnerUUID(player.getUniqueId().toString());
         this.setDataProperty(new LongEntityData(DATA_OWNER_EID, player.getId()));
-        this.setTamed(true);
+        this.setDataFlag(DATA_FLAGS, DATA_FLAG_TAMED, true);
     }
 
     @Override
@@ -85,51 +83,35 @@ public abstract class TameableMonster extends WalkingMonster implements Tameable
         return name.isEmpty() ? super.getName() : name;
     }
 
+    @Override
     public boolean isSitting() {
         return this.sitting;
     }
 
+    @Override
     public void setSitting(boolean sit) {
         this.sitting = sit;
         this.setDataFlag(DATA_FLAGS, DATA_FLAG_SITTING, sit);
-    }
 
-
-    private void setTamed(boolean tamed) {
-        this.setDataFlag(DATA_FLAGS, DATA_FLAG_TAMED, tamed);
+        this.motionX = this.motionZ = 0;
     }
 
     @Override
     public String getOwnerUUID() {
-        return this.ownerUUID;
+        return this.namedTag.getString(NAMED_TAG_OWNER_UUID);
     }
 
     @Override
     public void setOwnerUUID(String ownerUUID) {
-        this.ownerUUID = ownerUUID;
+        this.namedTag.putString(NAMED_TAG_OWNER_UUID, ownerUUID);
     }
 
     @Override
     public Vector3 updateMove(int tickDiff) {
         if (this.isSitting()) {
-            return this.target;
+            return null;
         }
 
         return super.updateMove(tickDiff);
-    }
-    
-    /**
-      * If the owner is online, set owner properly
-      */
-    public void checkOwner() {
-        if (this.owner == null && this.namedTag != null) {
-            String ownerName = namedTag.getString(NAMED_TAG_OWNER);
-            if (ownerName != null && !ownerName.isEmpty()) {
-                Player player = this.getServer().getPlayerExact(ownerName);
-                if (player != null) {
-                    this.setOwner(player);
-                }
-            }
-        }
     }
 }

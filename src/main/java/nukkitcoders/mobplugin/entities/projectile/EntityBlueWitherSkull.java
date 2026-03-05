@@ -60,7 +60,7 @@ public class EntityBlueWitherSkull extends EntityWitherSkull implements EntityEx
         }
         this.close();
 
-        EntityExplosionPrimeEvent ev = new EntityExplosionPrimeEvent(this, 1.2);
+        EntityExplosionPrimeEvent ev = new EntityExplosionPrimeEvent(this, 2); // bigger explosion works better for block breaking
         this.server.getPluginManager().callEvent(ev);
 
         if (!ev.isCancelled()) {

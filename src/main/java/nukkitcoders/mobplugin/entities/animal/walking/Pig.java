@@ -1,11 +1,7 @@
 package nukkitcoders.mobplugin.entities.animal.walking;
 
 import cn.nukkit.Player;
-import cn.nukkit.Server;
-import cn.nukkit.entity.Attribute;
-import cn.nukkit.entity.Entity;
-import cn.nukkit.entity.EntityCreature;
-import cn.nukkit.entity.EntityRideable;
+import cn.nukkit.entity.*;
 import cn.nukkit.entity.data.FloatEntityData;
 import cn.nukkit.entity.data.Vector3fEntityData;
 import cn.nukkit.entity.mob.EntityZombiePigman;
@@ -19,7 +15,6 @@ import cn.nukkit.math.Vector3;
 import cn.nukkit.math.Vector3f;
 import cn.nukkit.nbt.tag.CompoundTag;
 import cn.nukkit.network.protocol.LevelSoundEventPacket;
-import cn.nukkit.network.protocol.UpdateAttributesPacket;
 import nukkitcoders.mobplugin.entities.animal.WalkingAnimal;
 import nukkitcoders.mobplugin.utils.FastMathLite;
 import nukkitcoders.mobplugin.utils.Utils;
@@ -28,7 +23,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-public class Pig extends WalkingAnimal implements EntityRideable {
+public class Pig extends WalkingAnimal implements EntityRideable, EntityControllable {
 
     public static final int NETWORK_ID = 12;
 
@@ -76,7 +71,7 @@ public class Pig extends WalkingAnimal implements EntityRideable {
             if (player.closed) {
                 return false;
             }
-            int id = player.getInventory().getItemInHand().getId();
+            int id = player.getInventory().getItemInHandFast().getId();
             return player.spawned && player.isAlive()
                     && (id == Item.CARROT
                     || id == Item.POTATO
@@ -114,6 +109,7 @@ public class Pig extends WalkingAnimal implements EntityRideable {
         } else if (this.isSaddled() && this.passengers.isEmpty() && !this.isBaby() && !player.isSneaking()) {
             if (player.riding == null) {
                 this.mountEntity(player);
+                this.sendHealthToRider();
             }
         }
         return super.onInteract(player, item, clickedPos);
@@ -189,8 +185,9 @@ public class Pig extends WalkingAnimal implements EntityRideable {
         this.setDataFlag(DATA_FLAGS, DATA_FLAG_SADDLED, saddled);
     }
 
+    @Override
     public void onPlayerInput(Player player, double strafe, double forward) {
-        if (player.getInventory().getItemInHand().getId() == Item.CARROT_ON_A_STICK) {
+        if (player.getInventory().getItemInHandFast().getId() == Item.CARROT_ON_A_STICK) {
             this.stayTime = 0;
             this.moveTime = 10;
             this.route = null;
@@ -225,7 +222,7 @@ public class Pig extends WalkingAnimal implements EntityRideable {
 
     @Override
     protected void checkTarget() {
-        if (this.passengers.isEmpty() || !(this.getPassengers().get(0) instanceof Player) || ((Player) this.getPassengers().get(0)).getInventory().getItemInHand().getId() != Item.CARROT_ON_A_STICK) {
+        if (this.passengers.isEmpty() || !(this.getPassengers().get(0) instanceof Player) || ((Player) this.getPassengers().get(0)).getInventory().getItemInHandFast().getId() != Item.CARROT_ON_A_STICK) {
             super.checkTarget();
         }
     }
@@ -297,15 +294,17 @@ public class Pig extends WalkingAnimal implements EntityRideable {
     }
 
     @Override
+    public boolean entityBaseTick(int tickDiff) {
+        this.updatePassengers();
+        return super.entityBaseTick(tickDiff);
+    }
+
+    @Override
     public void setHealth(float health) {
         super.setHealth(health);
 
-        if (this.saddled && this.isAlive() && !this.passengers.isEmpty()) {
-            UpdateAttributesPacket pk = new UpdateAttributesPacket();
-            int max = this.getMaxHealth();
-            pk.entries = new Attribute[]{Attribute.getAttribute(Attribute.MAX_HEALTH).setMaxValue(max).setValue(this.health < max ? this.health : max)};
-            pk.entityId = this.id;
-            Server.broadcastPacket(this.getViewers().values(), pk);
+        if (this.saddled && this.isAlive()) {
+            this.sendHealthToRider();
         }
     }
 }

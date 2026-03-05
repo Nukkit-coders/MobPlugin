@@ -3,25 +3,32 @@ package nukkitcoders.mobplugin.entities;
 import cn.nukkit.Player;
 import cn.nukkit.Server;
 import cn.nukkit.block.Block;
+import cn.nukkit.block.BlockAnvil;
 import cn.nukkit.block.BlockID;
+import cn.nukkit.entity.Attribute;
 import cn.nukkit.entity.Entity;
 import cn.nukkit.entity.EntityAgeable;
 import cn.nukkit.entity.EntityCreature;
-import cn.nukkit.entity.EntityRideable;
-import cn.nukkit.entity.data.EntityData;
+import cn.nukkit.entity.data.LongEntityData;
 import cn.nukkit.event.Event;
+import cn.nukkit.event.entity.EntityDamageByBlockEvent;
 import cn.nukkit.event.entity.EntityDamageByEntityEvent;
 import cn.nukkit.event.entity.EntityDamageEvent;
 import cn.nukkit.event.entity.EntityInteractEvent;
 import cn.nukkit.item.Item;
+import cn.nukkit.item.ItemID;
+import cn.nukkit.level.GameRule;
+import cn.nukkit.level.Level;
 import cn.nukkit.level.format.FullChunk;
 import cn.nukkit.level.particle.HeartParticle;
 import cn.nukkit.math.AxisAlignedBB;
+import cn.nukkit.math.NukkitMath;
 import cn.nukkit.math.Vector3;
 import cn.nukkit.nbt.tag.CompoundTag;
+import cn.nukkit.network.protocol.BossEventPacket;
 import cn.nukkit.network.protocol.EntityEventPacket;
 import cn.nukkit.network.protocol.MoveEntityAbsolutePacket;
-import cn.nukkit.network.protocol.SetEntityMotionPacket;
+import cn.nukkit.network.protocol.UpdateAttributesPacket;
 import cn.nukkit.potion.Effect;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
@@ -29,11 +36,7 @@ import nukkitcoders.mobplugin.MobPlugin;
 import nukkitcoders.mobplugin.entities.animal.Animal;
 import nukkitcoders.mobplugin.entities.animal.walking.Cow;
 import nukkitcoders.mobplugin.entities.monster.Monster;
-import nukkitcoders.mobplugin.utils.FastMathLite;
 import nukkitcoders.mobplugin.utils.Utils;
-
-import java.util.Objects;
-import java.util.concurrent.ThreadLocalRandom;
 
 public abstract class BaseEntity extends EntityCreature implements EntityAgeable {
 
@@ -70,16 +73,19 @@ public abstract class BaseEntity extends EntityCreature implements EntityAgeable
     public int stayTime;
     public Item[] armor;
     protected int moveTime;
+    protected int noRotateTicks;
     protected float moveMultiplier = 1.0f;
     protected Vector3 target;
     protected Entity followTarget;
     protected int attackDelay;
     protected boolean noFallDamage;
     protected Player lastInteract;
-    private int airTicks;
+    private int airTicks = 300;
+    private long leadHolder = -1L;
     private boolean baby;
-    private boolean movement = true;
     private boolean friendly;
+    private boolean persistent;
+    private int lastDamageTick;
     private int knockBackTime;
     private short inLoveTicks;
     //private int inEndPortal;
@@ -88,9 +94,6 @@ public abstract class BaseEntity extends EntityCreature implements EntityAgeable
 
     public BaseEntity(FullChunk chunk, CompoundTag nbt) {
         super(chunk, nbt);
-
-        this.setHealth(this.getMaxHealth());
-        this.setAirTicks(300);
     }
 
     public abstract Vector3 updateMove(int tickDiff);
@@ -105,12 +108,14 @@ public abstract class BaseEntity extends EntityCreature implements EntityAgeable
         this.friendly = bool;
     }
 
+    @Deprecated
     public boolean isMovement() {
-        return this.movement;
+        return !this.isImmobile();
     }
 
+    @Deprecated
     public void setMovement(boolean value) {
-        this.movement = value;
+        this.setImmobile(value);
     }
 
     public boolean isKnockback() {
@@ -125,38 +130,42 @@ public abstract class BaseEntity extends EntityCreature implements EntityAgeable
     }
 
     public Vector3 getTarget() {
-        return this.target;
+        return this.followTarget != null ? this.followTarget : this.target;
     }
 
-    public void setTarget(Vector3 vec) {
-        this.target = vec;
-    }
-
-    public Entity getFollowTarget() {
-        if (this.followTarget != null) {
-            return this.followTarget;
-        } else if (this.target instanceof Entity) {
-            return (Entity) this.target;
-        } else {
-            return null;
-        }
-    }
-
-    public void setFollowTarget(Entity target) {
+    public void setTarget(Entity target) {
         this.followTarget = target;
         this.moveTime = 0;
         this.stayTime = 0;
         this.target = null;
     }
 
-    public Vector3 getTargetVector() {
-        if (this.followTarget != null) {
-            return this.followTarget;
-        } else if (this.target instanceof Entity) {
-            return this.target;
-        } else {
-            return null;
+    public void setTarget(Vector3 target) {
+        if (target instanceof Entity) {
+            this.setTarget((Entity) target);
+            return;
         }
+
+        this.followTarget = null;
+        this.moveTime = 0;
+        this.stayTime = 0;
+        this.target = target;
+    }
+
+    @Deprecated
+    public Vector3 getTargetVector() {
+        return getTarget();
+    }
+
+    @Deprecated
+    public Entity getFollowTarget() {
+        Vector3 t = getTarget();
+        return t instanceof Entity ? (Entity) t : null;
+    }
+
+    @Deprecated
+    public void setFollowTarget(Entity target) {
+        setTarget(target);
     }
 
     @Override
@@ -179,8 +188,10 @@ public abstract class BaseEntity extends EntityCreature implements EntityAgeable
     protected void initEntity() {
         super.initEntity();
 
-        if (this.namedTag.contains("Movement")) {
-            this.setMovement(this.namedTag.getBoolean("Movement"));
+        this.persistent = this.namedTag.getBoolean("Persistent");
+
+        if (this.namedTag.getBoolean("Immobile")) {
+            this.setImmobile();
         }
 
         if (this.namedTag.contains("Age")) {
@@ -209,39 +220,66 @@ public abstract class BaseEntity extends EntityCreature implements EntityAgeable
     public void saveNBT() {
         super.saveNBT();
 
-        this.namedTag.putBoolean("Baby", this.isBaby());
-        this.namedTag.putBoolean("Movement", this.isMovement());
+        if (this.isPersistent()) {
+            this.namedTag.putBoolean("Persistent", this.isPersistent());
+        } else {
+            this.namedTag.remove("Persistent");
+        }
+
+        if (this.isImmobile()) {
+            this.namedTag.putBoolean("Immobile", this.isImmobile());
+        } else {
+            this.namedTag.remove("Immobile");
+        }
+
+        if (this.isBaby()) {
+            this.namedTag.putBoolean("Baby", this.isBaby());
+        } else {
+            this.namedTag.remove("Baby");
+        }
+
         this.namedTag.putShort("Age", this.age);
-        this.namedTag.putShort("InLoveTicks", this.inLoveTicks);
-        this.namedTag.putShort("InLoveCooldown", this.inLoveCooldown);
+
+        if (this.isInLove()) {
+            this.namedTag.putShort("InLoveTicks", this.inLoveTicks);
+        } else {
+            this.namedTag.remove("InLoveTicks");
+        }
+        if (this.isInLoveCooldown()) {
+            this.namedTag.putShort("InLoveCooldown", this.inLoveCooldown);
+        } else {
+            this.namedTag.remove("InLoveCooldown");
+        }
     }
 
     public boolean targetOption(EntityCreature creature, double distance) {
         if (this instanceof Monster) {
             if (creature instanceof Player) {
                 Player player = (Player) creature;
-                return !player.closed && player.spawned && player.isAlive() && (player.isSurvival() || player.isAdventure()) && distance <= 100;
+                return !player.closed && player.spawned && player.isAlive() && (player.isSurvival() || player.isAdventure()) && distance <= 256;
             }
-            return creature.isAlive() && !creature.closed && distance <= 100;
+            return creature.isAlive() && !creature.closed && distance <= 256;
         } else if (this instanceof Animal && this.isInLove()) {
-            return creature instanceof BaseEntity && ((BaseEntity) creature).isInLove() && creature.isAlive() && !creature.closed && creature.getNetworkId() == this.getNetworkId() && distance <= 100;
+            return creature instanceof BaseEntity && ((BaseEntity) creature).isInLove() && creature.isAlive() && !creature.closed && creature.getNetworkId() == this.getNetworkId() && distance <= 256;
         }
         return false;
     }
 
     @Override
     public boolean entityBaseTick(int tickDiff) {
-        if (this.canDespawn()) {
-            if (MobPlugin.getInstance().config.killOnDespawn) {
-                this.kill();
-                return true;
-            } else {
+        if (age % 20 == 0) {
+            if (this.y > 127 && this.level.getDimension() == Level.DIMENSION_NETHER) {
                 this.close();
                 return false;
             }
         }
 
         boolean hasUpdate = super.entityBaseTick(tickDiff);
+
+        if (this.canDespawn()) {
+            this.close();
+            return false;
+        }
 
         if (this instanceof Monster && this.attackDelay < 200) {
             this.attackDelay++;
@@ -278,6 +316,10 @@ public abstract class BaseEntity extends EntityCreature implements EntityAgeable
             this.inLoveCooldown -= tickDiff;
         }
 
+        if (this.y > this.highestPosition) {
+            this.highestPosition = this.y;
+        }
+
         return hasUpdate;
     }
 
@@ -285,6 +327,7 @@ public abstract class BaseEntity extends EntityCreature implements EntityAgeable
     protected void checkBlockCollision() {
         //boolean netherPortal = false;
         //boolean endPortal = false;
+        Block powderSnow = null;
 
         for (Block block : this.getCollisionBlocks()) {
             /*if (block.getId() == Block.NETHER_PORTAL) {
@@ -296,6 +339,20 @@ public abstract class BaseEntity extends EntityCreature implements EntityAgeable
             }*/
 
             block.onEntityCollide(this);
+
+            if (block.getId() == Block.POWDER_SNOW) {
+                powderSnow = block;
+            }
+        }
+
+        if (powderSnow != null) {
+            this.inPowderSnowTicks++;
+
+            if (this.getFreezingDamage() > 0 && this.inPowderSnowTicks >= 140 && server.getTick() % 40 == 0 && (level.getGameRules().getBoolean(GameRule.FREEZE_DAMAGE))) {
+                this.attack(new EntityDamageByBlockEvent(powderSnow, this, EntityDamageEvent.DamageCause.CONTACT, this.getFreezingDamage()));
+            }
+        } else if (this.inPowderSnowTicks != 0) {
+            this.inPowderSnowTicks = 0;
         }
 
         /*if (endPortal) {
@@ -338,14 +395,25 @@ public abstract class BaseEntity extends EntityCreature implements EntityAgeable
         }
 
         if (source instanceof EntityDamageByEntityEvent) {
-            ((EntityDamageByEntityEvent) source).setKnockBack(0.25f);
+            ((EntityDamageByEntityEvent) source).setKnockBack(0.25f * getKnockbackModifier());
         }
 
         super.attack(source);
 
-        this.target = null;
-        this.stayTime = 0;
+        if (!source.isCancelled()) {
+            this.target = null;
+            this.stayTime = 0;
+            this.lastDamageTick = server.getTick();
+        }
         return true;
+    }
+
+    /**
+     * Modifier for mob knockback resistance
+     * @return 1 - vanilla resistance
+     */
+    protected float getKnockbackModifier() {
+        return 1f;
     }
 
     @Override
@@ -354,15 +422,43 @@ public abstract class BaseEntity extends EntityCreature implements EntityAgeable
             return false;
         }
 
+        if (this.leadHolder != -1L) {
+            Entity leadHolder = level.getEntity(this.leadHolder);
+
+            if (leadHolder == null) {
+                this.unleash();
+            } else {
+                double distance = this.distanceSquared(leadHolder);
+
+                if (distance > 100) {
+                    this.unleash();
+                } else if (distance > 49) {
+                    Vector3 toTarget = leadHolder.subtract(this).normalize();
+                    toTarget.x *= 0.5;
+                    toTarget.y *= 0.5;
+                    toTarget.z *= 0.5;
+
+                    this.setMotion(toTarget);
+
+                    dx = toTarget.x;
+                    dy = toTarget.y;
+                    dz = toTarget.z;
+                }
+            }
+        }
+
         if (dx == 0 && dz == 0 && dy == 0) {
             return false;
         }
+
+        this.blocksAround = null;
 
         double movX = dx * moveMultiplier;
         double movY = dy;
         double movZ = dz * moveMultiplier;
 
         AxisAlignedBB[] list = this.level.getCollisionCubes(this, this.boundingBox.addCoord(dx, dy, dz), false);
+
         for (AxisAlignedBB bb : list) {
             dx = bb.calculateXOffset(this.boundingBox, dx);
         }
@@ -655,9 +751,12 @@ public abstract class BaseEntity extends EntityCreature implements EntityAgeable
      *
      * @return can despawn
      */
-    public boolean canDespawn() {
-        int despawnTicks = MobPlugin.getInstance().config.despawnTicks;
-        return despawnTicks > 0 && this.age > despawnTicks && !this.hasCustomName() && !(this instanceof Boss);
+    protected boolean canDespawn() {
+        return this.y < -128 || (MobPlugin.getInstance().config.despawnMobs &&
+                !this.persistent && this.age % 100 == 0 && this.riding == null && this.inLoveTicks <= 0 && this.inLoveCooldown <= 0 &&
+                !this.isLeashed() && !this.hasCustomName() && server.getTick() - this.lastDamageTick > 600 && // no damage in 30 seconds
+                !this.isInTickingRange(9216d) // 96 blocks
+        );
     }
 
     /**
@@ -665,7 +764,7 @@ public abstract class BaseEntity extends EntityCreature implements EntityAgeable
      *
      * @return distance
      */
-    public int nearbyDistanceMultiplier() {
+    protected int nearbyDistanceMultiplier() {
         return 1;
     }
 
@@ -696,18 +795,6 @@ public abstract class BaseEntity extends EntityCreature implements EntityAgeable
     }
 
     @Override
-    public void addMotion(double motionX, double motionY, double motionZ) {
-        SetEntityMotionPacket pk = new SetEntityMotionPacket();
-        pk.eid = this.id;
-        pk.motionX = (float) motionX;
-        pk.motionY = (float) motionY;
-        pk.motionZ = (float) motionZ;
-        for (Player p : this.hasSpawned.values()) {
-            p.dataPacket(pk);
-        }
-    }
-
-    @Override
     protected void checkGroundState(double movX, double movY, double movZ, double dx, double dy, double dz) {
         if (onGround && movX == 0 && movY == 0 && movZ == 0 && dx == 0 && dy == 0 && dz == 0) {
             return;
@@ -716,24 +803,6 @@ public abstract class BaseEntity extends EntityCreature implements EntityAgeable
         this.isCollidedHorizontally = (movX != dx || movZ != dz);
         this.isCollided = (this.isCollidedHorizontally || this.isCollidedVertically);
         this.onGround = (movY != dy && movY < 0);
-    }
-
-    public static void setProjectileMotion(Entity projectile, double pitch, double yawR, double pitchR, double speed) {
-        double verticalMultiplier = Math.cos(pitchR);
-        double x = verticalMultiplier * Math.sin(-yawR);
-        double z = verticalMultiplier * Math.cos(yawR);
-        double y = Math.sin(-(FastMathLite.toRadians(pitch)));
-        double magnitude = Math.sqrt(x * x + y * y + z * z);
-        if (magnitude > 0) {
-            x += (x * (speed - magnitude)) / magnitude;
-            y += (y * (speed - magnitude)) / magnitude;
-            z += (z * (speed - magnitude)) / magnitude;
-        }
-        ThreadLocalRandom rand = ThreadLocalRandom.current();
-        x += rand.nextGaussian() * 0.007499999832361937 * 6;
-        y += rand.nextGaussian() * 0.007499999832361937 * 6;
-        z += rand.nextGaussian() * 0.007499999832361937 * 6;
-        projectile.setMotion(new Vector3(x, y, z));
     }
 
     @Override
@@ -753,34 +822,11 @@ public abstract class BaseEntity extends EntityCreature implements EntityAgeable
     }
 
     public boolean canTarget(Entity entity) {
-        return entity instanceof Player;
+        return entity instanceof Player && !entity.closed;
     }
 
-    @Override
-    protected boolean applyNameTag(Player player, Item nameTag) {
-        String name = nameTag.getCustomName();
-
-        if (!name.isEmpty()) {
-            this.namedTag.putString("CustomName", name);
-            this.namedTag.putBoolean("CustomNameVisible", true);
-            this.setNameTag(name);
-            this.setNameTagVisible(true);
-            return true; // onInteract: true = decrease count
-        }
-
-        return false;
-    }
-
-    @Override
-    public boolean setDataProperty(EntityData data, boolean send) {
-        if (!Objects.equals(data, this.dataProperties.get(data.getId()))) {
-            this.dataProperties.put(data);
-            if (send && (data.getId() != DATA_HEALTH || this instanceof EntityRideable || this instanceof Boss)) {
-                this.sendData(this.hasSpawned.values().toArray(new Player[0]), this.dataProperties);
-            }
-            return true;
-        }
-        return false;
+    protected float getFreezingDamage() {
+        return 1f;
     }
 
     /**
@@ -811,17 +857,22 @@ public abstract class BaseEntity extends EntityCreature implements EntityAgeable
     public void fall(float fallDistance) {
         if (fallDistance > 0.75) {
             if (!this.hasEffect(Effect.SLOW_FALLING)) {
-                Block down = this.level.getBlock(this.down());
+                if (Utils.entityInsideWaterFast(this)) {
+                    return;
+                }
+                int floor = level.getBlockIdAt(this.chunk, getFloorX(), getFloorY() - 1, getFloorZ());
                 if (!this.noFallDamage) {
                     float damage = (float) Math.floor(fallDistance - 3 - (this.hasEffect(Effect.JUMP) ? this.getEffect(Effect.JUMP).getAmplifier() + 1 : 0));
-                    if (down.getId() == BlockID.HAY_BALE) {
+                    if (floor == BlockID.HAY_BALE) {
                         damage -= (damage * 0.8f);
                     }
                     if (damage > 0) {
                         this.attack(new EntityDamageEvent(this, EntityDamageEvent.DamageCause.FALL, damage));
                     }
                 }
-                if (down.getId() == BlockID.FARMLAND) {
+                if (floor == BlockID.FARMLAND) {
+                    Vector3 pos = this.down();
+                    Block down = this.level.getBlock(this.chunk, pos.getFloorX(), pos.getFloorY(), pos.getFloorZ(), true);
                     Event ev = new EntityInteractEvent(this, down);
                     this.server.getPluginManager().callEvent(ev);
                     if (ev.isCancelled()) {
@@ -861,13 +912,18 @@ public abstract class BaseEntity extends EntityCreature implements EntityAgeable
                 be.stayTime = 60;
                 BaseEntity baby = (BaseEntity) Entity.createEntity(this.getNetworkId(), this);
                 baby.setBaby(true);
+                baby.setPersistent(true); // TODO: different flag for this?
                 baby.spawnToAll();
                 if (baby instanceof Cow) {
                     if (pl != null) {
                         pl.awardAchievement("breedCow");
                     }
                 }
-                if (!MobPlugin.getInstance().config.noXpOrbs) {
+                if (MobPlugin.getInstance().config.noXpOrbs) {
+                    if (pl != null) {
+                        pl.addExperience(Utils.rand(1, 7));
+                    }
+                } else {
                     this.level.dropExpOrb(this, Utils.rand(1, 7));
                 }
                 return true;
@@ -890,15 +946,17 @@ public abstract class BaseEntity extends EntityCreature implements EntityAgeable
                 this.inLoveTicks = 600;
                 //this.setDataFlag(DATA_FLAGS, DATA_FLAG_INLOVE, true);
             }
+            this.setPersistent(true); // TODO: different flag for this?
         } else {
             this.inLoveTicks = 0;
             //this.setDataFlag(DATA_FLAGS, DATA_FLAG_INLOVE, false);
         }
     }
 
-    protected boolean isInTickingRange() {
+    protected boolean isInTickingRange(double rangeSquared) {
         for (Player player : this.level.getPlayers().values()) {
-            if (player.distanceSquared(this) < 6400) { // 80 blocks
+            // Ignore y so mobs won't stop falling into void unless movement behavior is tweaked for this
+            if (Math.pow(player.x - this.x, 2.0) + Math.pow(player.z - this.z, 2.0) < rangeSquared) {
                 return true;
             }
         }
@@ -910,5 +968,224 @@ public abstract class BaseEntity extends EntityCreature implements EntityAgeable
         super.knockBack(attacker, damage, x, z, base);
 
         this.knockBackTime = 10;
+    }
+
+    @Override
+    protected boolean applyNameTag(Player player, Item nameTag) {
+        String name = nameTag.getCustomName();
+
+        if (!name.isEmpty()) {
+            this.namedTag.putString("CustomName", name);
+            this.namedTag.putBoolean("CustomNameVisible", true);
+            this.setNameTag(name);
+            this.setNameTagVisible(true);
+            return true; // onInteract: true = decrease count
+        }
+
+        return false;
+    }
+
+    public boolean isLeashed() {
+        return this.leadHolder != -1L;
+    }
+
+    public void leash(Entity leadHolder) {
+        this.leadHolder = leadHolder.getId();
+        this.setDataProperty(new LongEntityData(DATA_LEAD_HOLDER_EID, this.leadHolder));
+        this.setDataFlag(DATA_FLAGS, DATA_FLAG_LEASHED, true);
+    }
+
+    public void unleash() {
+        this.leadHolder = -1L;
+        this.setDataProperty(new LongEntityData(DATA_LEAD_HOLDER_EID, this.leadHolder));
+        this.setDataFlag(DATA_FLAGS, DATA_FLAG_LEASHED, false);
+        this.level.dropItem(this.add(0, 0.5, 0), Item.get(ItemID.LEAD));
+
+        EntityEventPacket pk = new EntityEventPacket();
+        pk.eid = this.getId();
+        pk.event = EntityEventPacket.REMOVE_LEASH;
+        Server.broadcastPacket(this.hasSpawned.values(), pk);
+    }
+
+    protected void sendHealthToRider() {
+        for (Entity entity : this.passengers) {
+            if (entity instanceof Player) {
+                UpdateAttributesPacket pk = new UpdateAttributesPacket();
+                int max = this.getMaxHealth();
+                pk.entries = new Attribute[]{Attribute.getAttribute(Attribute.MAX_HEALTH).setMaxValue(max).setValue(this.health < max ? this.health : max)};
+                pk.entityId = this.id;
+                ((Player) entity).dataPacket(pk);
+            }
+        }
+    }
+
+    protected boolean shouldMobBurn() {
+        if (this.closed || !this.isAlive()) {
+            return false;
+        }
+        if (level.getDimension() != Level.DIMENSION_OVERWORLD || level.isRaining()) {
+            return false;
+        }
+        if (this.fireTicks > 5 || this.age % 5 != 0) {
+            return false;
+        }
+        int time = level.getTime() % Level.TIME_FULL;
+        return (time < 12542 || time >= 23460) && !this.isInsideOfWater() && this.canSeeSky();
+    }
+
+    public boolean isPersistent() {
+        return this.persistent;
+    }
+
+    public void setPersistent(boolean persistent) {
+        this.persistent = persistent;
+    }
+
+    protected boolean seesTarget(Vector3 target) {
+        if (target instanceof Entity) {
+            Entity entity = (Entity) target;
+            if (this.age % 2 == 0) {
+                return this.getSeenPercentOverZero(this.add(0, 1.5, 0), entity);
+            }
+            return this.getSeenPercentOverZero(this.add(0, 0.5, 0), entity);
+        }
+
+        return true;
+    }
+
+    private boolean getSeenPercentOverZero(Vector3 source, Entity entity) {
+        AxisAlignedBB bb = entity.getBoundingBox();
+
+        if (bb.isVectorInside(source)) {
+            return true;
+        }
+
+        double x = 1 / ((bb.getMaxX() - bb.getMinX()) * 2 + 1);
+        double y = 1 / ((bb.getMaxY() - bb.getMinY()) * 2 + 1);
+        double z = 1 / ((bb.getMaxZ() - bb.getMinZ()) * 2 + 1);
+
+        double xOffset = (1 - Math.floor(1 / x) * x) / 2;
+        double yOffset = (1 - Math.floor(1 / y) * y) / 2;
+        double zOffset = (1 - Math.floor(1 / z) * z) / 2;
+
+        for (double i = 0; i <= 1; i += x) {
+            for (double j = 0; j <= 1; j += y) {
+                for (double k = 0; k <= 1; k += z) {
+                    Vector3 target = new Vector3(
+                            bb.getMinX() + i * (bb.getMaxX() - bb.getMinX()) + xOffset,
+                            bb.getMinY() + j * (bb.getMaxY() - bb.getMinY()) + yOffset,
+                            bb.getMinZ() + k * (bb.getMaxZ() - bb.getMinZ()) + zOffset
+                    );
+
+                    if (!raycastHit(source, target, this.level, this.chunk)) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private static boolean raycastHit(Vector3 start, Vector3 end, Level level, FullChunk fullChunk) {
+        Vector3 current = new Vector3(start.x, start.y, start.z);
+        Vector3 direction = end.subtract(start).normalize();
+
+        double stepX = Utils.sign(direction.getX());
+        double stepY = Utils.sign(direction.getY());
+        double stepZ = Utils.sign(direction.getZ());
+
+        double tMaxX = Utils.boundary(start.getX(), direction.getX());
+        double tMaxY = Utils.boundary(start.getY(), direction.getY());
+        double tMaxZ = Utils.boundary(start.getZ(), direction.getZ());
+
+        double tDeltaX = direction.getX() == 0 ? 0 : stepX / direction.getX();
+        double tDeltaY = direction.getY() == 0 ? 0 : stepY / direction.getY();
+        double tDeltaZ = direction.getZ() == 0 ? 0 : stepZ / direction.getZ();
+
+        double radius = start.distance(end);
+
+        while (true) {
+            Block block = level.getBlock(fullChunk, NukkitMath.floorDouble(current.x), NukkitMath.floorDouble(current.y), NukkitMath.floorDouble(current.z), false);
+
+            if ((block.isSolid() || block instanceof BlockAnvil) && block.calculateIntercept(current, end) != null) {
+                return true;
+            }
+
+            if (tMaxX < tMaxY && tMaxX < tMaxZ) {
+                if (tMaxX > radius) {
+                    break;
+                }
+
+                current.x += stepX;
+                tMaxX += tDeltaX;
+            } else if (tMaxY < tMaxZ) {
+                if (tMaxY > radius) {
+                    break;
+                }
+
+                current.y += stepY;
+                tMaxY += tDeltaY;
+            } else {
+                if (tMaxZ > radius) {
+                    break;
+                }
+
+                current.z += stepZ;
+                tMaxZ += tDeltaZ;
+            }
+        }
+
+        return false;
+    }
+
+    protected boolean canSetTemporalTarget() {
+        return this.followTarget == null;
+    }
+
+    @Override
+    public void setHealth(float health) {
+        super.setHealth(health);
+        if (!MobPlugin.getInstance().config.showBossBar) {
+            return;
+        }
+        if (this instanceof Boss) {
+            BossEventPacket pkBoss = new BossEventPacket();
+            pkBoss.bossEid = this.id;
+            pkBoss.type = BossEventPacket.TYPE_HEALTH_PERCENT;
+            pkBoss.title = this.getName();
+            pkBoss.healthPercent = this.getHealth() / this.getRealMaxHealth();
+            Server.broadcastPacket(this.getViewers().values(), pkBoss);
+        }
+    }
+
+    @Override
+    public void spawnTo(Player player) {
+        super.spawnTo(player);
+        if (!MobPlugin.getInstance().config.showBossBar) {
+            return;
+        }
+        if (this instanceof Boss) {
+            BossEventPacket pkBoss = new BossEventPacket();
+            pkBoss.bossEid = this.id;
+            pkBoss.type = BossEventPacket.TYPE_SHOW;
+            pkBoss.title = this.getName();
+            pkBoss.healthPercent = this.getHealth() / this.getRealMaxHealth();
+            player.dataPacket(pkBoss);
+        }
+    }
+
+    @Override
+    public void despawnFrom(Player player) {
+        super.despawnFrom(player);
+        if (!MobPlugin.getInstance().config.showBossBar) {
+            return;
+        }
+        if (this instanceof Boss) {
+            BossEventPacket pkBoss = new BossEventPacket();
+            pkBoss.bossEid = this.id;
+            pkBoss.type = BossEventPacket.TYPE_HIDE;
+            player.dataPacket(pkBoss);
+        }
     }
 }

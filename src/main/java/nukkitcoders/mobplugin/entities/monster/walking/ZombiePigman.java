@@ -22,7 +22,7 @@ public class ZombiePigman extends WalkingMonster implements EntitySmite {
 
     public static final int NETWORK_ID = 36;
 
-    private int angry = 0;
+    private int angry;
 
     public ZombiePigman(FullChunk chunk, CompoundTag nbt) {
         super(chunk, nbt);
@@ -40,7 +40,7 @@ public class ZombiePigman extends WalkingMonster implements EntitySmite {
 
     @Override
     public float getHeight() {
-        return 1.95f;
+        return 1.9f;
     }
 
     @Override
@@ -53,9 +53,7 @@ public class ZombiePigman extends WalkingMonster implements EntitySmite {
         this.setMaxHealth(20);
         super.initEntity();
 
-        if (this.namedTag.contains("Angry")) {
-            this.angry = this.namedTag.getInt("Angry");
-        }
+        this.angry = this.namedTag.getInt("Angry");
 
         this.fireProof = true;
         this.setDamage(new float[] { 0, 5, 9, 13 });
@@ -105,7 +103,7 @@ public class ZombiePigman extends WalkingMonster implements EntitySmite {
         this.angry = val;
 
         if (others && val > 0) {
-            for (Entity creature : this.level.getEntities()) {
+            for (Entity creature : this.getLevel().getEntities()) {
                 if (creature instanceof ZombiePigman && !((ZombiePigman) creature).isAngry() && this.distanceSquared(creature) <= 400) { // 20 blocks
                     ((ZombiePigman) creature).setAngry(val);
                 }

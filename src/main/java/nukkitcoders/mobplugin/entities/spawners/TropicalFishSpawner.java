@@ -5,9 +5,9 @@ import cn.nukkit.block.Block;
 import cn.nukkit.level.Level;
 import cn.nukkit.level.Position;
 import nukkitcoders.mobplugin.AutoSpawnTask;
+import nukkitcoders.mobplugin.utils.Utils;
 import nukkitcoders.mobplugin.entities.animal.swimming.TropicalFish;
 import nukkitcoders.mobplugin.entities.autospawn.AbstractEntitySpawner;
-import nukkitcoders.mobplugin.utils.Utils;
 
 public class TropicalFishSpawner extends AbstractEntitySpawner {
 
@@ -16,7 +16,7 @@ public class TropicalFishSpawner extends AbstractEntitySpawner {
     }
 
     public void spawn(Player player, Position pos, Level level) {
-        if (Utils.rand(1, 3) != 1) {
+        if (Utils.rand(1, 4) == 1) {
             return;
         }
         final int blockId = level.getBlockIdAt((int) pos.x, (int) pos.y, (int) pos.z);

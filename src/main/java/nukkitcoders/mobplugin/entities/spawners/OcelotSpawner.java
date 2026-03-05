@@ -18,20 +18,26 @@ public class OcelotSpawner extends AbstractEntitySpawner {
     }
 
     public void spawn(Player player, Position pos, Level level) {
-        if (Utils.rand(1, 3) != 1) {
+        if (Utils.rand(1, 10) != 1) {
+            return;
+        }
+        if (Utils.rand(1, 3) == 1) {
+            return;
+        }
+        if (!MobPlugin.isAnimalSpawningAllowedByTime(level)) {
             return;
         }
         final int biomeId = level.getBiomeId((int) pos.x, (int) pos.z);
         if (biomeId == 21 || biomeId == 149 || biomeId == 23 || biomeId == 151 || biomeId == 48 || biomeId == 49) {
             final int blockId = level.getBlockIdAt((int) pos.x, (int) pos.y, (int) pos.z);
             if (blockId == Block.GRASS) {
-                if (MobPlugin.isAnimalSpawningAllowedByTime(level)) {
-                    for (int i = 0; i < Utils.rand(1, 2); i++) {
-                        BaseEntity entity = this.spawnTask.createEntity("Ocelot", pos.add(0.5, 1, 0.5));
-                        if (entity == null) return;
-                        if (Utils.rand(1, 20) == 1) {
-                            entity.setBaby(true);
-                        }
+                for (int i = 0; i < Utils.rand(1, 2); i++) {
+                    BaseEntity entity = this.spawnTask.createEntity("Ocelot", pos.add(0.5, 1, 0.5));
+                    if (entity == null) {
+                        return;
+                    }
+                    if (Utils.rand(1, 20) == 1) {
+                        entity.setBaby(true);
                     }
                 }
             }

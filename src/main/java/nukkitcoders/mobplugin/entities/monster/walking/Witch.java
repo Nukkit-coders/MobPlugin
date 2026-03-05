@@ -4,6 +4,7 @@ import cn.nukkit.Player;
 import cn.nukkit.block.Block;
 import cn.nukkit.entity.Entity;
 import cn.nukkit.entity.EntityCreature;
+import cn.nukkit.entity.EntityLiving;
 import cn.nukkit.entity.item.EntityPotion;
 import cn.nukkit.event.entity.EntityDamageEvent;
 import cn.nukkit.event.entity.ProjectileLaunchEvent;
@@ -41,7 +42,7 @@ public class Witch extends WalkingMonster {
 
     @Override
     public float getHeight() {
-        return 1.95f;
+        return 1.9f;
     }
 
     @Override
@@ -75,7 +76,7 @@ public class Witch extends WalkingMonster {
                 double yaw = this.yaw + Utils.rand(-4.0, 4.0);
                 Location pos = new Location(this.x - Math.sin(Math.toRadians(yaw)) * Math.cos(Math.toRadians(pitch)) * 0.5, this.y + this.getEyeHeight(),
                         this.z + Math.cos(Math.toRadians(yaw)) * Math.cos(Math.toRadians(pitch)) * 0.5, yaw, pitch, this.level);
-                if (this.getLevel().getBlockIdAt(pos.getFloorX(), pos.getFloorY(), pos.getFloorZ()) != Block.AIR) {
+                if (this.getLevel().getBlockIdAt(this.chunk, pos.getFloorX(), pos.getFloorY(), pos.getFloorZ()) != Block.AIR) {
                     return;
                 }
                 EntityPotion thrownPotion = (EntityPotion) Entity.createEntity("ThrownPotion", pos, this);
@@ -106,33 +107,32 @@ public class Witch extends WalkingMonster {
         }
     }
 
-
     @Override
     public Item[] getDrops() {
         List<Item> drops = new ArrayList<>();
 
-        drops.add(Item.get(Item.REDSTONE, 0, cn.nukkit.utils.Utils.rand(4, 8)));
+        drops.add(Item.get(Item.REDSTONE, 0, Utils.rand(4, 8)));
 
-        for (int i = 0; i < cn.nukkit.utils.Utils.rand(1, 3); i++) {
-            switch (cn.nukkit.utils.Utils.rand(1, 7)) {
+        for (int i = 0; i < Utils.rand(1, 3); i++) {
+            switch (Utils.rand(1, 7)) {
                 case 1:
-                    drops.add(Item.get(Item.GLOWSTONE_DUST, 0, cn.nukkit.utils.Utils.rand(0, 2)));
+                    drops.add(Item.get(Item.GLOWSTONE_DUST, 0, Utils.rand(0, 2)));
                     break;
                 case 2:
-                    drops.add(Item.get(Item.SUGAR, 0, cn.nukkit.utils.Utils.rand(0, 2)));
+                    drops.add(Item.get(Item.SUGAR, 0, Utils.rand(0, 2)));
                     break;
                 case 3:
-                    drops.add(Item.get(Item.SPIDER_EYE, 0, cn.nukkit.utils.Utils.rand(0, 2)));
+                    drops.add(Item.get(Item.SPIDER_EYE, 0, Utils.rand(0, 2)));
                     break;
                 case 4:
-                    drops.add(Item.get(Item.GLASS_BOTTLE, 0, cn.nukkit.utils.Utils.rand(0, 2)));
+                    drops.add(Item.get(Item.GLASS_BOTTLE, 0, Utils.rand(0, 2)));
                     break;
                 case 5:
-                    drops.add(Item.get(Item.GUNPOWDER, 0, cn.nukkit.utils.Utils.rand(0, 2)));
+                    drops.add(Item.get(Item.GUNPOWDER, 0, Utils.rand(0, 2)));
                     break;
                 case 6:
                 case 7:
-                    drops.add(Item.get(Item.STICK, 0, cn.nukkit.utils.Utils.rand(0, 2)));
+                    drops.add(Item.get(Item.STICK, 0, Utils.rand(0, 2)));
                     break;
             }
         }
@@ -146,7 +146,12 @@ public class Witch extends WalkingMonster {
     }
 
     @Override
-    public int nearbyDistanceMultiplier() {
-        return 8;
+    protected int nearbyDistanceMultiplier() {
+        return target instanceof EntityLiving || followTarget instanceof EntityLiving ? 6 : 1;
+    }
+
+    @Override
+    public boolean canDespawn() {
+        return false; // TODO: swamp hut only
     }
 }

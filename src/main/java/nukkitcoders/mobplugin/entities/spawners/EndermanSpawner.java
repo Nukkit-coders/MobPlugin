@@ -3,6 +3,7 @@ package nukkitcoders.mobplugin.entities.spawners;
 import cn.nukkit.Player;
 import cn.nukkit.level.Level;
 import cn.nukkit.level.Position;
+import cn.nukkit.level.biome.EnumBiome;
 import nukkitcoders.mobplugin.AutoSpawnTask;
 import nukkitcoders.mobplugin.MobPlugin;
 import nukkitcoders.mobplugin.entities.autospawn.AbstractEntitySpawner;
@@ -19,21 +20,24 @@ public class EndermanSpawner extends AbstractEntitySpawner {
         boolean nether = level.getDimension() == Level.DIMENSION_NETHER;
         boolean end = level.getDimension() == Level.DIMENSION_THE_END;
 
-        if (!nether && !end && !MobPlugin.isMobSpawningAllowedByTime(level)) {
+        if (!MobPlugin.isMobSpawningAllowedByTime(level) && !nether && !end) {
             return;
         }
 
-        if (!end && Utils.rand(1, nether ? 10 : 7) != 1) {
+        int biome = level.getBiomeId((int) pos.x, (int) pos.z);
+        if (!end && Utils.rand(1, nether ? (biome == EnumBiome.WARPED_FOREST.id ? 4 : 10) : 10) != 1) {
             return;
         }
 
-        if (level.getBlockLightAt((int) pos.x, (int) pos.y + 1, (int) pos.z) <= 7 || nether || end) {
-            if (end) {
-                for (int i = 0; i < Utils.rand(1, 4); i++) {
+        if (level.getBlockLightAt((int) pos.x, (int) pos.y + 1, (int) pos.z) == 0 || nether || end) {
+            if (!nether || (biome != EnumBiome.CRIMSON_FOREST.id && biome != EnumBiome.BASALT_DELTAS.id)) {
+                if (end) {
+                    for (int i = 0; i < Utils.rand(1, 4); i++) {
+                        this.spawnTask.createEntity("Enderman", pos.add(0.5, 1, 0.5));
+                    }
+                } else {
                     this.spawnTask.createEntity("Enderman", pos.add(0.5, 1, 0.5));
                 }
-            } else {
-                this.spawnTask.createEntity("Enderman", pos.add(0.5, 1, 0.5));
             }
         }
     }

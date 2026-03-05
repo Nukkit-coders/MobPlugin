@@ -24,7 +24,7 @@ public class WanderingTrader extends WalkingAnimal {
 
     @Override
     public float getHeight() {
-        return 1.95f;
+        return 1.9f;
     }
 
     @Override

@@ -7,7 +7,9 @@ import cn.nukkit.entity.EntityExplosive;
 import cn.nukkit.event.entity.EntityDamageByEntityEvent;
 import cn.nukkit.event.entity.EntityDamageEvent;
 import cn.nukkit.event.entity.EntityExplosionPrimeEvent;
+import cn.nukkit.inventory.PlayerInventory;
 import cn.nukkit.item.Item;
+import cn.nukkit.item.ItemSkull;
 import cn.nukkit.level.Explosion;
 import cn.nukkit.level.GameRule;
 import cn.nukkit.level.format.FullChunk;
@@ -28,6 +30,7 @@ public class Creeper extends WalkingMonster implements EntityExplosive {
 
     private short bombTime;
     private int explodeTimer;
+    private long seenTarget = -1L;
 
     public Creeper(FullChunk chunk, CompoundTag nbt) {
         super(chunk, nbt);
@@ -127,22 +130,27 @@ public class Creeper extends WalkingMonster implements EntityExplosive {
         Vector3 target = this.updateMove(tickDiff);
         if (target != null) {
             double distance = target.distanceSquared(this);
-            if (distance <= 16) { // 4 blocks
-                if (target instanceof EntityCreature) {
-                    if (this.explodeTimer <= 0) {
-                        if (bombTime == 0) {
-                            this.getLevel().addLevelEvent(this, LevelEventPacket.EVENT_SOUND_TNT);
-                            this.setDataFlag(DATA_FLAGS, DATA_FLAG_IGNITED, true);
-                        }
-                        this.bombTime += tickDiff;
-                        if (this.bombTime >= 30) {
-                            this.explode();
-                            return false;
-                        }
+
+            if (target instanceof EntityCreature && this.seenTarget == -1L && distance <= 16) {
+                if (this.seesTarget(target)) {
+                    this.seenTarget = ((EntityCreature) target).getId();
+                }
+            }
+
+            if (distance <= 16 && target instanceof EntityCreature && this.seenTarget == ((EntityCreature) target).getId()) { // 4 blocks
+                if (this.explodeTimer <= 0) {
+                    if (bombTime == 0) {
+                        this.getLevel().addLevelEvent(this, LevelEventPacket.EVENT_SOUND_TNT);
+                        this.setDataFlag(DATA_FLAGS, DATA_FLAG_IGNITED, true);
                     }
-                    if (distance <= 1) {
-                        this.stayTime = 10;
+                    this.bombTime += tickDiff;
+                    if (this.bombTime >= 30) {
+                        this.explode();
+                        return false;
                     }
+                }
+                if (distance <= 1) {
+                    this.stayTime = 10;
                 }
             } else {
                 if (this.explodeTimer <= 0) {
@@ -210,5 +218,22 @@ public class Creeper extends WalkingMonster implements EntityExplosive {
 
             this.setPowered(true);
         }
+    }
+
+    @Override
+    public boolean targetOption(EntityCreature creature, double distance) {
+        if (creature instanceof Player) {
+            Player player = (Player) creature;
+            if (!player.closed && player.spawned && player.isAlive() && (player.isSurvival() || player.isAdventure())) {
+                PlayerInventory inv = player.getInventory();
+                Item helmet;
+                if (inv != null && (helmet = inv.getHelmetFast()).getId() == Item.SKULL && helmet.getDamage() == ItemSkull.CREEPER_HEAD) {
+                    return distance <= 64;
+                }
+                return distance <= 256;
+            }
+            return false;
+        }
+        return creature.isAlive() && !creature.closed && distance <= 256;
     }
 }

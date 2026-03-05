@@ -1,12 +1,14 @@
 package nukkitcoders.mobplugin;
 
+import cn.nukkit.Player;
 import cn.nukkit.Server;
 import cn.nukkit.block.Block;
 import cn.nukkit.entity.Entity;
 import cn.nukkit.event.entity.CreatureSpawnEvent;
+import cn.nukkit.level.GameRule;
 import cn.nukkit.level.Level;
 import cn.nukkit.level.Position;
-import cn.nukkit.math.Vector3;
+import cn.nukkit.level.format.FullChunk;
 import cn.nukkit.utils.Config;
 import nukkitcoders.mobplugin.entities.BaseEntity;
 import nukkitcoders.mobplugin.entities.animal.flying.Bat;
@@ -17,11 +19,11 @@ import nukkitcoders.mobplugin.entities.animal.walking.*;
 import nukkitcoders.mobplugin.entities.autospawn.IEntitySpawner;
 import nukkitcoders.mobplugin.entities.monster.flying.Blaze;
 import nukkitcoders.mobplugin.entities.monster.flying.Ghast;
+import nukkitcoders.mobplugin.entities.monster.flying.Phantom;
 import nukkitcoders.mobplugin.entities.monster.jumping.MagmaCube;
 import nukkitcoders.mobplugin.entities.monster.jumping.Slime;
 import nukkitcoders.mobplugin.entities.monster.walking.*;
 import nukkitcoders.mobplugin.entities.spawners.*;
-import nukkitcoders.mobplugin.utils.Utils;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -108,9 +110,15 @@ public class AutoSpawnTask implements Runnable {
         monsterSpawners.add(new HoglinSpawner(this));
         animalSpawners.add(new LlamaSpawner(this));
         animalSpawners.add(new StriderSpawner(this));
+        monsterSpawners.add(new ZombifiedPiglinSpawner(this));
     }
 
     private void prepareMaxSpawns() {
+        if (!((this.pluginConfig.get("autospawn")) instanceof Map) || ((Map) this.pluginConfig.get("autospawn")).isEmpty()) {
+            MobPlugin.getInstance().getLogger().warning("config.yml 'autospawn' section is empty, make sure it exists and is formatted correctly");
+            return;
+        }
+
         maxSpawns.put(Bat.NETWORK_ID, this.pluginConfig.getInt("autospawn.bat"));
         maxSpawns.put(Blaze.NETWORK_ID, this.pluginConfig.getInt("autospawn.blaze"));
         maxSpawns.put(Chicken.NETWORK_ID, this.pluginConfig.getInt("autospawn.chicken"));
@@ -154,93 +162,86 @@ public class AutoSpawnTask implements Runnable {
         maxSpawns.put(Strider.NETWORK_ID, this.pluginConfig.getInt("autospawn.strider"));
     }
 
-    public boolean entitySpawnAllowed(Level level, int networkId, Vector3 pos) {
+    public boolean entitySpawnAllowed(Level level, int networkId, Player player) {
+        if (networkId == Phantom.NETWORK_ID && (player.getTimeSinceRest() < 72000 || player.isSleeping() || player.isSpectator() || !level.getGameRules().getBoolean(GameRule.DO_INSOMNIA))) {
+            return false;
+        }
+
         if (!spawningAllowedByDimension(networkId, level.getDimension())) {
             return false;
         }
 
-        int count = 0;
         int max = networkId == Enderman.NETWORK_ID && level.getDimension() == Level.DIMENSION_THE_END ? plugin.config.endEndermanSpawnRate : maxSpawns.getOrDefault(networkId, 0);
 
         if (max < 1) {
             return false;
         }
 
+        int count = 0;
+        int globalCount = 0;
+
         for (Entity entity : level.getEntities()) {
-            if (entity.isAlive() && entity.getNetworkId() == networkId && new Vector3(pos.x, entity.y, pos.z).distanceSquared(entity) < 16384) { // 128 blocks
-                count++;
-                if (count > max) {
+            if (!(entity instanceof BaseEntity) || !entity.isAlive()) {
+                continue;
+            }
+            if (Math.pow(player.x - entity.x, 2) + Math.pow(player.z - entity.z, 2) < 16384) { // 128 blocks, ignore y
+                if (++globalCount > MobPlugin.getInstance().config.globalMobCap) {
+                    return false;
+                }
+                if (entity.getNetworkId() == networkId && ++count > max) {
                     return false;
                 }
             }
         }
 
-        return count < max;
+        return true;
     }
 
     public BaseEntity createEntity(Object type, Position pos) {
-        BaseEntity entity = (BaseEntity) Entity.createEntity((String) type, pos);
-        if (entity != null) {
-            if (!entity.isInsideOfSolid()) {
+        BaseEntity entity = null;
+        if (!Block.solid[pos.level.getBlockIdAt(pos.getFloorX(), pos.getFloorY(), pos.getFloorZ())]) {
+            entity = (BaseEntity) Entity.createEntity((String) type, pos);
+            if (entity != null) {
                 CreatureSpawnEvent ev = new CreatureSpawnEvent(entity.getNetworkId(), pos, entity.namedTag, CreatureSpawnEvent.SpawnReason.NATURAL);
                 Server.getInstance().getPluginManager().callEvent(ev);
                 if (!ev.isCancelled()) {
+                    entity.stayTime = 60;
                     entity.spawnToAll();
                 } else {
                     entity.close();
                     entity = null;
                 }
-            } else {
-                entity.close();
-                entity = null;
             }
         }
         return entity;
     }
 
-    public int getRandomSafeXZCoord(int degree, int safeDegree, int correctionDegree) {
-        int addX = Utils.rand((degree >> 1) * -1, degree >> 1);
-        if (addX >= 0) {
-            if (degree < safeDegree) {
-                addX = safeDegree;
-                addX += Utils.rand((correctionDegree >> 1) * -1, correctionDegree >> 1);
-            }
-        } else {
-            if (degree > safeDegree) {
-                addX = -safeDegree;
-                addX += Utils.rand((correctionDegree >> 1) * -1, correctionDegree >> 1);
-            }
-        }
-
-        return addX;
-    }
-
-    public int getSafeYCoord(Level level, Position pos) {
+    public static int getSafeYCoord(Level level, Position pos) {
         int x = (int) pos.x;
         int y = (int) pos.y;
         int z = (int) pos.z;
 
-        if (level.getBlockIdAt(x, y, z) == Block.AIR) {
+        FullChunk chunk = level.getChunk(x >> 4, z >> 4, false);
+        if (level.getBlockIdAt(chunk, x, y, z) == Block.AIR) {
             while (true) {
                 y--;
-                if (y > 255) {
-                    y = 256;
+                if (y > level.getMaxBlockY()) {
+                    y = level.getMaxBlockY();
                     break;
                 }
-                if (y < 1) {
-                    y = 0;
+                if (y < level.getMinBlockY()) {
+                    y = level.getMinBlockY();
                     break;
                 }
-                if (level.getBlockIdAt(x, y, z) != Block.AIR) {
+                if (level.getBlockIdAt(chunk, x, y, z) != Block.AIR) {
                     int checkNeedDegree = 3;
                     int checkY = y;
                     while (true) {
                         checkY++;
                         checkNeedDegree--;
-                        if (checkY > 255 || level.getBlockIdAt(x, checkY, z) != Block.AIR) {
+                        if (checkY > level.getMaxBlockY() || checkY < level.getMinBlockY() || level.getBlockIdAt(chunk, x, checkY, z) != Block.AIR) {
                             break;
                         }
-
                         if (checkNeedDegree <= 0) {
                             return y;
                         }
@@ -250,26 +251,23 @@ public class AutoSpawnTask implements Runnable {
         } else {
             while (true) {
                 y++;
-                if (y > 255) {
-                    y = 256;
+                if (y > level.getMaxBlockY()) {
+                    y = level.getMaxBlockY();
                     break;
                 }
-
-                if (y < 1) {
-                    y = 0;
+                if (y < level.getMinBlockY()) {
+                    y = level.getMinBlockY();
                     break;
                 }
-
-                if (level.getBlockIdAt(x, y, z) != Block.AIR) {
+                if (level.getBlockIdAt(chunk, x, y, z) != Block.AIR) {
                     int checkNeedDegree = 3;
                     int checkY = y;
                     while (true) {
                         checkY--;
                         checkNeedDegree--;
-                        if (checkY < 1 || level.getBlockIdAt(x, checkY, z) != Block.AIR) {
+                        if (checkY > level.getMaxBlockY() || checkY < level.getMinBlockY() || level.getBlockIdAt(chunk, x, checkY, z) != Block.AIR) {
                             break;
                         }
-
                         if (checkNeedDegree <= 0) {
                             return y;
                         }

@@ -1,19 +1,16 @@
 package nukkitcoders.mobplugin.entities.monster.flying;
 
 import cn.nukkit.Player;
-import cn.nukkit.block.Block;
 import cn.nukkit.entity.Entity;
 import cn.nukkit.entity.EntityCreature;
+import cn.nukkit.entity.EntityLiving;
 import cn.nukkit.event.entity.ProjectileLaunchEvent;
 import cn.nukkit.item.Item;
-import cn.nukkit.level.Location;
 import cn.nukkit.level.format.FullChunk;
-import cn.nukkit.math.Vector3;
 import cn.nukkit.nbt.tag.CompoundTag;
 import cn.nukkit.network.protocol.LevelEventPacket;
 import nukkitcoders.mobplugin.entities.monster.FlyingMonster;
 import nukkitcoders.mobplugin.entities.projectile.EntityBlazeFireBall;
-import nukkitcoders.mobplugin.utils.FastMathLite;
 import nukkitcoders.mobplugin.utils.Utils;
 
 public class Blaze extends FlyingMonster {
@@ -72,27 +69,21 @@ public class Blaze extends FlyingMonster {
                 this.setDataFlag(DATA_FLAGS, DATA_FLAG_CHARGED, false);
             }
 
-            double f = 1.1;
-            double yaw = this.yaw + Utils.rand(-4.0, 4.0);
-            double pitch = this.pitch + Utils.rand(-4.0, 4.0);
-            Location pos = new Location(this.x - Math.sin(FastMathLite.toRadians(yaw)) * Math.cos(FastMathLite.toRadians(pitch)) * 0.5, this.y + this.getEyeHeight(),
-                    this.z + Math.cos(FastMathLite.toRadians(yaw)) * Math.cos(FastMathLite.toRadians(pitch)) * 0.5, yaw, pitch, this.level);
+            EntityBlazeFireBall shot = (EntityBlazeFireBall) Entity.createEntity("BlazeFireBall", this.add(0, this.getEyeHeight(), 0), this);
 
-            if (this.getLevel().getBlockIdAt(pos.getFloorX(), pos.getFloorY(), pos.getFloorZ()) != Block.AIR) {
+            if (Utils.hasCollisionBlocks(shot.level, shot, shot.boundingBox)) {
+                shot.close();
                 return;
             }
 
-            EntityBlazeFireBall fireball = (EntityBlazeFireBall) Entity.createEntity("BlazeFireBall", pos, this);
+            shot.setMotion(player.add(0, 0.3, 0).subtract(this).normalize().multiply(1.2));
 
-            fireball.setMotion(new Vector3(-Math.sin(FastMathLite.toRadians(yaw)) * Math.cos(FastMathLite.toRadians(pitch)) * f * f, -Math.sin(FastMathLite.toRadians(pitch)) * f * f,
-                    Math.cos(FastMathLite.toRadians(yaw)) * Math.cos(FastMathLite.toRadians(pitch)) * f * f));
-
-            ProjectileLaunchEvent launch = new ProjectileLaunchEvent(fireball);
+            ProjectileLaunchEvent launch = new ProjectileLaunchEvent(shot);
             this.server.getPluginManager().callEvent(launch);
             if (launch.isCancelled()) {
-                fireball.close();
+                shot.close();
             } else {
-                fireball.spawnToAll();
+                shot.spawnToAll();
                 this.level.addLevelEvent(this, LevelEventPacket.EVENT_SOUND_BLAZE_SHOOT);
             }
         }
@@ -109,7 +100,7 @@ public class Blaze extends FlyingMonster {
     }
 
     @Override
-    public int nearbyDistanceMultiplier() {
-        return 1000; // don't follow
+    protected int nearbyDistanceMultiplier() {
+        return target instanceof EntityLiving || followTarget instanceof EntityLiving ? 1000 : 1; // don't follow
     }
 }

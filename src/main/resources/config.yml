@@ -1,62 +1,66 @@
 # Config version, do not edit!
-config-version: 18
+config-version: 19
 
 entities:
   # How often the spawn task should run
   # In ticks, 20 ticks = 1 second
-  # Use 0 to disable entity spawning
+  # Anything <= 0 means entity spawning is disabled
   autospawn-ticks: 200
-  # How often the despawn task should run
-  # In ticks, 20 ticks = 1 second
-  # Use 0 to disable entity despawning
-  despawn-ticks: 12000
+  # Deprecated for more vanilla like despawning
+  # Anything > 0 means despawning is enabled and <= 0 disabled
+  despawn-ticks: 1
   # Do not spawn entities in these worlds
+  # World names separated by ", "
   worlds-spawning-disabled: "exampleworld1, exampleworld2"
+  # Max mobs withing 128 blocks
+  global-mob-cap: 200
+  # Don't tick mob movement if no players within this range
+  activation-range: 80
 
 # Spawning limit settings
 # Per player, in 128 blocks range
 autospawn:
   bat: 0
   blaze: 0
-  chicken: 2
-  cod: 4
-  cow: 2
-  creeper: 2
-  dolphin: 2
-  donkey: 2
+  chicken: 4
+  cod: 10
+  cow: 4
+  creeper: 4
+  dolphin: 4
+  donkey: 4
+  drowned: 4
   enderman: 2
-  ghast: 2
-  husk: 2
-  horse: 2
-  magmacube: 2
-  mooshroom: 2
-  ocelot: 2
-  parrot: 2
-  pig: 2
-  polarbear: 2
-  pufferfish: 2
-  rabbit: 2
-  salmon: 4
-  sheep: 2
-  skeleton: 2
-  slime: 2
-  spider: 2
-  squid: 2
-  stray: 2
-  tropicalfish: 2
-  turtle: 2
-  witch: 1
-  witherskeleton: 2
-  wolf: 2
-  zombie: 2
-  zombiepigman: 4
   fox: 2
-  panda: 2
-  drowned: 2
+  ghast: 4
+  hoglin: 4
+  horse: 4
+  husk: 4
+  llama: 4
+  magmacube: 4
+  mooshroom: 4
+  ocelot: 4
+  panda: 4
+  parrot: 4
+  pig: 4
   piglin: 4
-  hoglin: 0
-  llama: 2
-  strider: 2
+  polarbear: 4
+  pufferfish: 3
+  rabbit: 4
+  salmon: 10
+  sheep: 4
+  skeleton: 4
+  slime: 4
+  spider: 4
+  squid: 4
+  stray: 4
+  strider: 4
+  tropicalfish: 4
+  turtle: 4
+  witch: 1
+  witherskeleton: 4
+  wolf: 4
+  zombie: 4
+  zombiepigman: 4
 
 spawners:
   # Enable mob spawner blocks
@@ -84,9 +88,6 @@ other:
   # Do not spawn mobs this near to spawn area
   # Set -1 to disable
   spawn-no-spawning-area: -1
-  # Kill entities instead of despawning them
-  # This can have a negative impact on performance due to the drops
-  kill-mobs-on-despawn: false
   # Custom enderman max spawns rule for the_end world
   end-enderman-spawning: 10
   # If tamed entity owner attacked or attack entity, it will become angry

@@ -19,16 +19,21 @@ public class WolfSpawner extends AbstractEntitySpawner {
 
     @Override
     public void spawn(Player player, Position pos, Level level) {
-        if (Utils.rand(1, 3) != 1) {
+        if (Utils.rand(1, 10) != 1) {
+            return;
+        }
+        if (!MobPlugin.isAnimalSpawningAllowedByTime(level)) {
             return;
         }
         final int biomeId = level.getBiomeId((int) pos.x, (int) pos.z);
-        if (MobPlugin.isAnimalSpawningAllowedByTime(level) && ((biomeId == 4 || biomeId == 5 || biomeId == 20 || biomeId == 27 || biomeId == 30 || biomeId == 32 || biomeId == 133 || biomeId == 158))) {
+        if (biomeId == 4 || biomeId == 5 || biomeId == 20 || biomeId == 27 || biomeId == 30 || biomeId == 32 || biomeId == 133 || biomeId == 158) {
             int blockId = level.getBlockIdAt((int) pos.x, (int) pos.y, (int) pos.z);
             if (blockId == Block.GRASS || blockId == Block.SNOW_LAYER) {
                 for (int i = 0; i < 4; i++) {
                     BaseEntity entity = this.spawnTask.createEntity("Wolf", pos.add(0.5, 1, 0.5));
-                    if (entity == null) return;
+                    if (entity == null) {
+                        return;
+                    }
                     if (Utils.rand(1, 10) == 1) {
                         entity.setBaby(true);
                     }

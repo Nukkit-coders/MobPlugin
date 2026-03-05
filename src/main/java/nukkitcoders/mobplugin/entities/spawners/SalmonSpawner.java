@@ -16,7 +16,7 @@ public class SalmonSpawner extends AbstractEntitySpawner {
     }
 
     public void spawn(Player player, Position pos, Level level) {
-        if (Utils.rand(1, 3) != 1) {
+        if (Utils.rand(1, 4) != 1) {
             return;
         }
         final int blockId = level.getBlockIdAt((int) pos.x, (int) pos.y, (int) pos.z);

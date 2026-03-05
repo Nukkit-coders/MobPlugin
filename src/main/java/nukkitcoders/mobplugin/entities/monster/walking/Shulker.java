@@ -67,7 +67,7 @@ public class Shulker extends WalkingMonster {
             double pitch = this.pitch + Utils.rand(-4.0, 4.0);
             Location pos = new Location(this.x - Math.sin(Math.toRadians(yaw)) * Math.cos(Math.toRadians(pitch)) * 0.5, this.y + this.getHeight() - 0.18,
                     this.z + Math.cos(Math.toRadians(yaw)) * Math.cos(Math.toRadians(pitch)) * 0.5, yaw, pitch, this.level);
-            if (this.getLevel().getBlockIdAt(pos.getFloorX(), pos.getFloorY(), pos.getFloorZ()) != Block.AIR) {
+            if (this.getLevel().getBlockIdAt(this.chunk, pos.getFloorX(), pos.getFloorY(), pos.getFloorZ()) != Block.AIR) {
                 return;
             }
             Entity k = Entity.createEntity("ShulkerBullet", pos, this);
@@ -115,5 +115,10 @@ public class Shulker extends WalkingMonster {
 
     @Override
     public void knockBack(Entity attacker, double damage, double x, double z, double base) {
+    }
+
+    @Override
+    public boolean canDespawn() {
+        return false;
     }
 }

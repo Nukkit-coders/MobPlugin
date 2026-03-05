@@ -2,20 +2,22 @@ package nukkitcoders.mobplugin.entities.block;
 
 import cn.nukkit.Player;
 import cn.nukkit.block.Block;
-import cn.nukkit.block.BlockID;
 import cn.nukkit.blockentity.BlockEntity;
 import cn.nukkit.blockentity.BlockEntitySpawnable;
 import cn.nukkit.entity.Entity;
 import cn.nukkit.event.entity.CreatureSpawnEvent;
 import cn.nukkit.level.Position;
 import cn.nukkit.level.format.FullChunk;
-import cn.nukkit.math.NukkitRandom;
 import cn.nukkit.nbt.tag.CompoundTag;
 import cn.nukkit.nbt.tag.ShortTag;
 import nukkitcoders.mobplugin.MobPlugin;
 import nukkitcoders.mobplugin.entities.BaseEntity;
 import nukkitcoders.mobplugin.entities.monster.Monster;
+import nukkitcoders.mobplugin.entities.monster.flying.Blaze;
+import nukkitcoders.mobplugin.entities.monster.walking.*;
 import nukkitcoders.mobplugin.utils.Utils;
+
+import java.util.concurrent.ThreadLocalRandom;
 
 public class BlockEntitySpawner extends BlockEntitySpawnable {
 
@@ -31,8 +33,6 @@ public class BlockEntitySpawner extends BlockEntitySpawnable {
 
     private int minSpawnCount;
     private int maxSpawnCount;
-
-    private final NukkitRandom nukkitRandom = new NukkitRandom();
 
     public static final String TAG_ID = "id";
     public static final String TAG_X = "x";
@@ -113,19 +113,19 @@ public class BlockEntitySpawner extends BlockEntitySpawnable {
 
             int nearbyEntities = 0;
             boolean playerInRange = false;
-            for (Entity entity : this.level.getEntities()) {
+            for (Entity entity : this.getLevel().getEntities()) {
                 if (!playerInRange && entity instanceof Player && !((Player) entity).isSpectator()) {
-                    if (entity.distance(this) <= this.requiredPlayerRange) {
+                    if (entity.distanceSquared(this) <= this.requiredPlayerRange * this.requiredPlayerRange) {
                         playerInRange = true;
                     }
                 } else if (entity instanceof BaseEntity) {
-                    if (entity.distance(this) <= this.requiredPlayerRange) {
+                    if (entity.distanceSquared(this) <= this.requiredPlayerRange * this.requiredPlayerRange) {
                         nearbyEntities++;
                     }
                 }
             }
 
-            int amountToSpawn = minSpawnCount + nukkitRandom.nextBoundedInt(maxSpawnCount);
+            int amountToSpawn = minSpawnCount + ThreadLocalRandom.current().nextInt(maxSpawnCount);
             for (int i = 0; i < amountToSpawn; i++) {
                 if (playerInRange && nearbyEntities <= this.maxNearbyEntities) {
                     Position pos = new Position
@@ -135,13 +135,9 @@ public class BlockEntitySpawner extends BlockEntitySpawnable {
                                     this.z + Utils.rand(-this.spawnRange, this.spawnRange),
                                     this.level
                             );
-                    Block block = level.getBlock(pos);
+
                     //Mobs shouldn't spawn in walls and they shouldn't retry to
-                    if (
-                            block.getId() != 0 && block.getId() != BlockID.SIGN_POST && block.getId() != BlockID.WALL_SIGN &&
-                            block.getId() != BlockID.STILL_WATER && block.getId() != BlockID.WATER &&
-                            block.getId() != BlockID.LAVA && block.getId() != BlockID.STILL_LAVA
-                    ) {
+                    if (Block.solid[level.getBlockIdAt(this.chunk, pos.getFloorX(), pos.getFloorY(), pos.getFloorZ())]) {
                         continue;
                     }
 
@@ -154,7 +150,9 @@ public class BlockEntitySpawner extends BlockEntitySpawnable {
 
                     Entity entity = Entity.createEntity(this.entityId, pos);
                     if (entity != null) {
-                        if (entity instanceof Monster && this.level.getBlockLightAt((int) x, (int) y, (int) z) > 3) {
+                        if (entity instanceof Monster &&
+                                (this.level.getBlockLightAt((int) x, (int) y, (int) z) > ((entity instanceof Silverfish || entity instanceof Blaze) ? 12 : 0) ||
+                                        (!MobPlugin.isMobSpawningAllowedByTime(level) && level.canBlockSeeSky(this)))) {
                             entity.close();
                             continue;
                         }
@@ -184,17 +182,20 @@ public class BlockEntitySpawner extends BlockEntitySpawnable {
 
     @Override
     public CompoundTag getSpawnCompound() {
-        return new CompoundTag()
+        CompoundTag tag = new CompoundTag()
                 .putString(TAG_ID, BlockEntity.MOB_SPAWNER)
-                .putInt(TAG_ENTITY_ID, this.entityId)
                 .putInt(TAG_X, (int) this.x)
                 .putInt(TAG_Y, (int) this.y)
                 .putInt(TAG_Z, (int) this.z);
+        if (this.entityId != 0) {
+            tag.putInt(TAG_ENTITY_ID, this.entityId);
+        }
+        return tag;
     }
 
     @Override
     public boolean isBlockEntityValid() {
-        return level.getBlockIdAt((int) x, (int) y, (int) z) == Block.MONSTER_SPAWNER;
+        return level.getBlockIdAt(this.chunk, (int) x, (int) y, (int) z) == Block.MONSTER_SPAWNER;
     }
 
     public int getSpawnEntityType() {

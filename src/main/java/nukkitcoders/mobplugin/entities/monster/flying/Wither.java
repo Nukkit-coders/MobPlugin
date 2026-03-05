@@ -12,20 +12,16 @@ import cn.nukkit.event.entity.ProjectileLaunchEvent;
 import cn.nukkit.item.Item;
 import cn.nukkit.level.Explosion;
 import cn.nukkit.level.GameRule;
-import cn.nukkit.level.Location;
 import cn.nukkit.level.Sound;
 import cn.nukkit.level.format.FullChunk;
 import cn.nukkit.math.Vector3;
 import cn.nukkit.nbt.tag.CompoundTag;
 import cn.nukkit.network.protocol.AddEntityPacket;
-import cn.nukkit.network.protocol.BossEventPacket;
 import cn.nukkit.network.protocol.DataPacket;
-import nukkitcoders.mobplugin.MobPlugin;
 import nukkitcoders.mobplugin.entities.Boss;
 import nukkitcoders.mobplugin.entities.monster.FlyingMonster;
 import nukkitcoders.mobplugin.entities.projectile.EntityBlueWitherSkull;
 import nukkitcoders.mobplugin.entities.projectile.EntityWitherSkull;
-import nukkitcoders.mobplugin.utils.FastMathLite;
 import nukkitcoders.mobplugin.utils.Utils;
 
 public class Wither extends FlyingMonster implements Boss, EntitySmite {
@@ -94,37 +90,32 @@ public class Wither extends FlyingMonster implements Boss, EntitySmite {
         if (this.age > 220 && this.attackDelay > 40 && this.distanceSquared(player) <= 4096) {
             this.attackDelay = 0;
 
-            double f = 1;
-            double yaw = this.yaw + Utils.rand(-4.0, 4.0);
-            double pitch = this.pitch + Utils.rand(-4.0, 4.0);
-            Location pos = new Location(this.x - Math.sin(FastMathLite.toRadians(yaw)) * Math.cos(FastMathLite.toRadians(pitch)) * 0.5, this.y + this.getEyeHeight(),
-                    this.z + Math.cos(FastMathLite.toRadians(yaw)) * Math.cos(FastMathLite.toRadians(pitch)) * 0.5, yaw, pitch, this.level);
+            Entity k;
+            ProjectileLaunchEvent launch;
+            EntityWitherSkull shot;
+            if (cn.nukkit.utils.Utils.rand(0, 200) > 180 || cn.nukkit.utils.Utils.rand(0, 200) < 20) {
+                k = Entity.createEntity("BlueWitherSkull", this.add(0, this.getEyeHeight(), 0), this);
+                shot = (EntityBlueWitherSkull) k;
+                ((EntityBlueWitherSkull) shot).setExplode(true);
+                shot.setMotion(player.subtract(this).normalize().multiply(1.1));
+            } else {
+                k = Entity.createEntity("WitherSkull", this.add(0, this.getEyeHeight(), 0), this);
+                shot = (EntityWitherSkull) k;
+                shot.setMotion(player.subtract(this).normalize().multiply(1.2));
+            }
 
-            if (this.getLevel().getBlockIdAt(pos.getFloorX(), pos.getFloorY(), pos.getFloorZ()) != Block.AIR) {
+            if (Utils.hasCollisionBlocks(shot.level, shot, shot.boundingBox)) {
+                shot.close();
                 return;
             }
 
-            Entity k;
-            ProjectileLaunchEvent launch;
-            EntityWitherSkull skull;
-            if (Utils.rand(0, 200) > 180 || Utils.rand(0, 200) < 20) {
-                f = 0.8;
-                k = Entity.createEntity("BlueWitherSkull", pos, this);
-                skull = (EntityBlueWitherSkull) k;
-                ((EntityBlueWitherSkull) skull).setExplode(true);
-            } else {
-                k = Entity.createEntity("WitherSkull", pos, this);
-                skull = (EntityWitherSkull) k;
-            }
-            skull.setMotion(new Vector3(-Math.sin(FastMathLite.toRadians(yaw)) * Math.cos(FastMathLite.toRadians(pitch)) * f * f, -Math.sin(FastMathLite.toRadians(pitch)) * f * f,
-                    Math.cos(FastMathLite.toRadians(yaw)) * Math.cos(FastMathLite.toRadians(pitch)) * f * f));
-            launch = new ProjectileLaunchEvent(skull);
+            launch = new ProjectileLaunchEvent(shot);
 
             this.server.getPluginManager().callEvent(launch);
             if (launch.isCancelled()) {
-                skull.close();
+                shot.close();
             } else {
-                skull.spawnToAll();
+                shot.spawnToAll();
                 this.level.addSound(this, Sound.MOB_WITHER_SHOOT);
             }
         }
@@ -132,7 +123,7 @@ public class Wither extends FlyingMonster implements Boss, EntitySmite {
 
     @Override
     public Item[] getDrops() {
-        return new Item[]{Item.get(Item.NETHER_STAR, 0, 1)};
+        return new Item[]{Item.get(Item.NETHER_STAR, 0, 1), Block.get(Item.WITHER_ROSE, 0).toItem()};
     }
 
     @Override
@@ -171,8 +162,8 @@ public class Wither extends FlyingMonster implements Boss, EntitySmite {
     }
 
     @Override
-    public int nearbyDistanceMultiplier() {
-        return 30;
+    protected int nearbyDistanceMultiplier() {
+        return target instanceof EntityLiving || followTarget instanceof EntityLiving ? 20 : 1;
     }
 
     @Override
@@ -211,19 +202,21 @@ public class Wither extends FlyingMonster implements Boss, EntitySmite {
             int fx = this.getFloorX();
             int fy = this.getFloorY();
             int fz = this.getFloorZ();
-            Vector3 pos = new Vector3(0, 0, 0);
             Item tool = Item.get(Item.DIAMOND_PICKAXE);
+            Vector3 pos = new Vector3(0, 0, 0);
             for (int x = fx - 2; x <= fx + 2; x++) {
                 for (int y = fy; y <= fy + 4; y++) {
                     for (int z = fz - 2; z <= fz + 2; z++) {
-                        Block block = this.level.getBlock(x, y, z);
+                        Block block = this.level.getBlock(this.chunk, x, y, z, true);
                         if (block.isBreakable(tool)) {
-                            pos.setComponents(x, y, z);
-                            this.level.setBlock(pos, Block.get(Block.AIR));
-                            BlockEntity blockEntity = this.level.getBlockEntityIfLoaded(pos);
+                            this.level.setBlock(x, y, z, Block.get(Block.AIR), false, true);
+                            BlockEntity blockEntity = this.level.getBlockEntityIfLoaded(this.chunk, pos.setComponents(x, y, z));
                             if (blockEntity != null) {
-                                blockEntity.onBreak();
+                                if (!blockEntity.closed) {
+                                    blockEntity.onBreak();
+                                }
                                 blockEntity.close();
+                                this.level.updateComparatorOutputLevel(block);
                             }
                             if (this.level.getGameRules().getBoolean(GameRule.DO_TILE_DROPS) && Math.random() * 100 < 14) {
                                 for (Item drop : block.getDrops(tool)) {
@@ -266,26 +259,17 @@ public class Wither extends FlyingMonster implements Boss, EntitySmite {
 
     @Override
     public boolean canTarget(Entity entity) {
-        return true;
-    }
-
-    @Override
-    public void spawnTo(Player player) {
-        super.spawnTo(player);
-        if (!MobPlugin.getInstance().config.showBossBar) {
-            return;
-        }
-        BossEventPacket pkBoss = new BossEventPacket();
-        pkBoss.bossEid = this.id;
-        pkBoss.type = BossEventPacket.TYPE_SHOW;
-        pkBoss.title = this.getName();
-        pkBoss.healthPercent = this.health / 100;
-        player.dataPacket(pkBoss);
+        return !entity.closed;
     }
 
     @Override
     public String getName() {
         String name = this.getNameTag();
         return !name.isEmpty() ? name : "Wither";
+    }
+
+    @Override
+    public boolean canDespawn() {
+        return false;
     }
 }

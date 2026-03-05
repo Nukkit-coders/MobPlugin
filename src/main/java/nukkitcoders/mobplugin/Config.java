@@ -7,7 +7,6 @@ public class Config {
     final cn.nukkit.utils.Config pluginConfig;
 
     public int spawnDelay;
-    public int despawnTicks;
     public int spawnerRange;
     public int spawnerMinSpawnCount;
     public int spawnerMaxSpawnCount;
@@ -17,9 +16,11 @@ public class Config {
     public int spawnerRequiredPlayerRange;
     public int spawnNoSpawningArea;
     public int endEndermanSpawnRate;
+    public int globalMobCap;
+    public double entityActivationRange;
+    public boolean despawnMobs;
     public boolean noXpOrbs;
     public boolean noSpawnEggWasting;
-    public boolean killOnDespawn;
     public boolean spawnersEnabled;
     public boolean checkTamedEntityAttack;
     public boolean creeperExplodeBlocks;
@@ -34,7 +35,7 @@ public class Config {
     }
 
     boolean init(MobPlugin plugin) {
-        int ver = 18;
+        int ver = 19;
         int current = pluginConfig.getInt("config-version");
 
         if (current != ver) {
@@ -43,6 +44,11 @@ public class Config {
                 plugin.getLogger().error("Config error. The plugin will be disabled.");
                 plugin.getServer().getPluginManager().disablePlugin(plugin);
                 return false;
+            }
+
+            if (current < 19) {
+                pluginConfig.set("entities.global-mob-cap", 200);
+                pluginConfig.set("entities.activation-range", 128);
             }
 
             if (current < 18) {
@@ -88,9 +94,7 @@ public class Config {
                 pluginConfig.set("other.end-enderman-spawning", 10);
             }
 
-            if (current < 11) {
-                pluginConfig.set("other.kill-mobs-on-despawn", false);
-            }
+            // Version 11 other.kill-mobs-on-despawn removed in 19
 
             if (current < 10) {
                 pluginConfig.set("other.spawn-no-spawning-area", -1);
@@ -103,7 +107,10 @@ public class Config {
 
         //entities
         spawnDelay = pluginConfig.getInt("entities.autospawn-ticks") >> 1; // The task runs double the speed but spawns only either monsters or animals
-        despawnTicks = pluginConfig.getInt("entities.despawn-ticks");
+        globalMobCap = pluginConfig.getInt("entities.global-mob-cap", 200);
+        entityActivationRange = pluginConfig.getInt("entities.activation-range", 64);
+        entityActivationRange *= entityActivationRange;
+        despawnMobs = pluginConfig.getInt("entities.despawn-ticks") > 0;
         mobSpawningDisabledWorlds = loadStringListAsSet("entities.worlds-spawning-disabled");
 
         //spawners
@@ -120,7 +127,6 @@ public class Config {
         //other
         noXpOrbs = pluginConfig.getBoolean("other.use-no-xp-orbs");
         spawnNoSpawningArea = pluginConfig.getInt("other.spawn-no-spawning-area");
-        killOnDespawn = pluginConfig.getBoolean("other.kill-mobs-on-despawn");
         endEndermanSpawnRate = pluginConfig.getInt("other.end-enderman-spawning");
         checkTamedEntityAttack = pluginConfig.getBoolean("other.check-tamed-entity-attack");
         creeperExplodeBlocks = pluginConfig.getBoolean("other.creeper-explode-blocks");

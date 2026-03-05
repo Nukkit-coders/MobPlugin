@@ -9,7 +9,6 @@ import cn.nukkit.item.Item;
 import cn.nukkit.level.format.FullChunk;
 import cn.nukkit.nbt.tag.CompoundTag;
 import cn.nukkit.network.protocol.MobEquipmentPacket;
-import cn.nukkit.network.protocol.types.ContainerIds;
 import nukkitcoders.mobplugin.entities.monster.WalkingMonster;
 import nukkitcoders.mobplugin.utils.Utils;
 
@@ -37,7 +36,7 @@ public class Vindicator extends WalkingMonster {
 
     @Override
     public float getHeight() {
-        return 1.95f;
+        return 1.9f;
     }
 
     @Override
@@ -90,13 +89,13 @@ public class Vindicator extends WalkingMonster {
         }
 
         if (!this.closed) {
-            if (this.getFollowTarget() != null) {
+            if (this.followTarget != null) {
                 if (!this.angry) {
                     this.angry = true;
-                    this.setDataFlag(DATA_FLAGS, DATA_FLAG_ANGRY, true);
+                    this.setDataFlag(DATA_FLAGS, DATA_FLAG_ANGRY, true); // show the axe
                 }
-                if (this.getDataPropertyLong(DATA_TARGET_EID) != this.getFollowTarget().getId()) {
-                    this.setDataProperty(new LongEntityData(DATA_TARGET_EID, this.getFollowTarget().getId()));
+                if (this.getDataPropertyLong(DATA_TARGET_EID) != this.followTarget.getId()) {
+                    this.setDataProperty(new LongEntityData(DATA_TARGET_EID, this.followTarget.getId())); // raise the axe
                 }
             } else {
                 if (this.angry) {
@@ -119,8 +118,12 @@ public class Vindicator extends WalkingMonster {
         MobEquipmentPacket pk = new MobEquipmentPacket();
         pk.eid = this.getId();
         pk.item = Item.get(Item.IRON_AXE);
-        pk.windowId = ContainerIds.INVENTORY;
-        pk.inventorySlot = pk.hotbarSlot = 0;
+        pk.hotbarSlot = 0;
         player.dataPacket(pk);
+    }
+
+    @Override
+    public boolean canDespawn() {
+        return false;
     }
 }

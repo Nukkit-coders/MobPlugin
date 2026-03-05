@@ -2,23 +2,26 @@ package nukkitcoders.mobplugin.entities.animal.flying;
 
 import cn.nukkit.Player;
 import cn.nukkit.entity.Entity;
+import cn.nukkit.entity.EntityArthropod;
 import cn.nukkit.entity.EntityCreature;
 import cn.nukkit.event.entity.EntityDamageByEntityEvent;
 import cn.nukkit.event.entity.EntityDamageEvent;
 import cn.nukkit.item.Item;
 import cn.nukkit.level.format.FullChunk;
+import cn.nukkit.math.Vector3;
 import cn.nukkit.nbt.tag.CompoundTag;
 import cn.nukkit.potion.Effect;
+import cn.nukkit.utils.Utils;
 import nukkitcoders.mobplugin.entities.monster.FlyingMonster;
-import nukkitcoders.mobplugin.utils.Utils;
 
 import java.util.HashMap;
 
-public class Bee extends FlyingMonster {
+public class Bee extends FlyingMonster implements EntityArthropod {
 
     public static final int NETWORK_ID = 122;
 
-    private boolean angry;
+    private int angry;
+    private int dieInTicks = -1;
 
     public Bee(FullChunk chunk, CompoundTag nbt) {
         super(chunk, nbt);
@@ -60,13 +63,18 @@ public class Bee extends FlyingMonster {
 
     @Override
     public double getSpeed() {
-        return 1.2;
+        return this.angry > 0 ? 1.5 : 1;
     }
 
     @Override
     public void attackEntity(Entity player) {
         if (this.attackDelay > 23 && this.distanceSquared(player) < 1.3) {
             this.attackDelay = 0;
+
+            this.target = this.followTarget = null;
+            this.dieInTicks = 500;
+            this.setAngry(0);
+
             HashMap<EntityDamageEvent.DamageModifier, Float> damage = new HashMap<>();
             damage.put(EntityDamageEvent.DamageModifier.BASE, this.getDamage());
             if (player instanceof Player) {
@@ -93,24 +101,82 @@ public class Bee extends FlyingMonster {
         return this.isAngry() && super.targetOption(creature, distance);
     }
 
+    public boolean isAngry() {
+        return this.angry > 0;
+    }
+
+    public void setAngry(int ticks) {
+        this.followBlock = null;
+        this.angry = ticks;
+        this.setDataFlag(DATA_FLAGS, DATA_FLAG_ANGRY, this.angry > 0);
+    }
+
+    public boolean hasSting() {
+        return dieInTicks == -1;
+    }
+
+    public void setAngry(Entity entity) {
+        setAngry(500);
+        target(entity);
+    }
+
     @Override
-    public boolean attack(EntityDamageEvent ev) {
-        if (super.attack(ev)) {
-            if (ev instanceof EntityDamageByEntityEvent && ((EntityDamageByEntityEvent) ev).getDamager() instanceof Player) {
-                this.setAngry(true);
+    public boolean attack(EntityDamageEvent source) {
+        if (source.getCause() == EntityDamageEvent.DamageCause.SUFFOCATION) {
+            if (ticksLived < 10) {
+                source.setCancelled();
+                return false;
             }
-            return true;
         }
 
+        if (source instanceof EntityDamageByEntityEvent) {
+            EntityDamageByEntityEvent event = (EntityDamageByEntityEvent) source;
+            for (Entity entity : getLevel().getCollidingEntities(this.getBoundingBox().grow(8, 8, 8))) {
+                if (entity instanceof Bee && ((Bee) entity).hasSting()) {
+                    ((Bee) entity).setAngry(event.getDamager());
+                }
+            }
+        }
+
+        return super.attack(source);
+    }
+
+    @Override
+    public boolean onUpdate(int currentTick) {
+        if (closed) {
+            return false;
+        }
+
+        if (!hasSting() && isAlive()) {
+            dieInTicks--;
+            if (dieInTicks <= 0) {
+                kill();
+            }
+        }
+
+        if (this.angry > 0) {
+            if (this.angry == 1) {
+                this.setAngry(0); // Reset flag
+            } else {
+                this.angry--;
+            }
+        }
+
+        return super.onUpdate(currentTick);
+    }
+
+    @Override
+    public void saveNBT() {
+        super.saveNBT();
+    }
+
+    @Override
+    public boolean canDespawn() {
         return false;
     }
 
-    public boolean isAngry() {
-        return this.angry;
-    }
-
-    public void setAngry(boolean angry) {
-        this.angry = angry;
-        this.setDataFlag(DATA_FLAGS, DATA_FLAG_ANGRY, angry);
+    private void target(Vector3 pos) {
+        this.target = this.followBlock = pos;
+        this.stayTime = 0;
     }
 }

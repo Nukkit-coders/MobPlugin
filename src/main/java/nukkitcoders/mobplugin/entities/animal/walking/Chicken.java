@@ -90,7 +90,7 @@ public class Chicken extends WalkingAnimal {
             if (player.closed) {
                 return false;
             }
-            int id = player.getInventory().getItemInHand().getId();
+            int id = player.getInventory().getItemInHandFast().getId();
             return player.isAlive()
                     && (id == Item.SEEDS
                             || id == Item.BEETROOT_SEEDS

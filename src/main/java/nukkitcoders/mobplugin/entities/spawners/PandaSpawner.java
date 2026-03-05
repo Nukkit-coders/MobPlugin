@@ -18,19 +18,24 @@ public class PandaSpawner extends AbstractEntitySpawner {
     }
 
     public void spawn(Player player, Position pos, Level level) {
-        if (Utils.rand(1, 3) != 1) {
+        if (Utils.rand(1, 10) != 1) {
+            return;
+        }
+        if (!MobPlugin.isAnimalSpawningAllowedByTime(level)) {
             return;
         }
         final int biomeId = level.getBiomeId((int) pos.x, (int) pos.z);
         if (((biomeId == 21 || biomeId == 22) && Utils.rand(1, 10) != 1) || biomeId != 48 && biomeId != 49 && biomeId != 21 && biomeId != 22) {
             return;
         }
-        if (!MobPlugin.isAnimalSpawningAllowedByTime(level) || level.getBlockIdAt((int) pos.x, (int) pos.y, (int) pos.z) != Block.GRASS) {
+        if (level.getBlockIdAt((int) pos.x, (int) pos.y, (int) pos.z) != Block.GRASS) {
             return;
         }
         for (int i = 0; i < Utils.rand(1, 2); i++) {
             BaseEntity entity = this.spawnTask.createEntity("Panda", pos.add(0.5, 1, 0.5));
-            if (entity == null) return;
+            if (entity == null) {
+                return;
+            }
             if (Utils.rand(1, 20) == 1) {
                 entity.setBaby(true);
             }

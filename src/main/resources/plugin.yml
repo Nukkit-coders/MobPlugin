@@ -1,7 +1,7 @@
 name: MobPlugin
 main: nukkitcoders.mobplugin.MobPlugin
 version: "${pom.version}"
-api: ["1.0.14"]
+api: ["1.1.0"]
 author: kniffo80, matt404, augesrob, PetteriM1, PikyCZ, zzz1999, SergeyDertan
 description: Add mobs and animals with AI & spawning
 website: https://cloudburstmc.org/resources/mobplugin.3/

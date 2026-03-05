@@ -1,22 +1,19 @@
 package nukkitcoders.mobplugin.entities.monster.flying;
 
 import cn.nukkit.Player;
-import cn.nukkit.block.Block;
 import cn.nukkit.entity.Entity;
 import cn.nukkit.entity.EntityCreature;
+import cn.nukkit.entity.EntityLiving;
 import cn.nukkit.event.entity.EntityDamageByChildEntityEvent;
 import cn.nukkit.event.entity.EntityDamageByEntityEvent;
 import cn.nukkit.event.entity.EntityDamageEvent;
 import cn.nukkit.event.entity.ProjectileLaunchEvent;
 import cn.nukkit.item.Item;
-import cn.nukkit.level.Location;
 import cn.nukkit.level.format.FullChunk;
-import cn.nukkit.math.Vector3;
 import cn.nukkit.nbt.tag.CompoundTag;
 import cn.nukkit.network.protocol.LevelEventPacket;
 import nukkitcoders.mobplugin.entities.monster.FlyingMonster;
 import nukkitcoders.mobplugin.entities.projectile.EntityGhastFireBall;
-import nukkitcoders.mobplugin.utils.FastMathLite;
 import nukkitcoders.mobplugin.utils.Utils;
 
 import java.util.ArrayList;
@@ -65,7 +62,7 @@ public class Ghast extends FlyingMonster {
     public boolean targetOption(EntityCreature creature, double distance) {
         if (creature instanceof Player) {
             Player player = (Player) creature;
-            return !player.closed && player.spawned && player.isAlive() && (player.isSurvival() || player.isAdventure()) && distance <= 4096;
+            return !player.closed && player.spawned && player.isAlive() && (player.isSurvival() || player.isAdventure()) && distance <= (this.attacked ? 4096 : 784);
         }
         return false;
     }
@@ -83,27 +80,21 @@ public class Ghast extends FlyingMonster {
             if (this.attackDelay > 60) {
                 this.attackDelay = 0;
 
-                double f = 1.01;
-                double yaw = this.yaw + Utils.rand(-4.0, 4.0);
-                double pitch = this.pitch + Utils.rand(-4.0, 4.0);
-                Location pos = new Location(this.x - Math.sin(FastMathLite.toRadians(yaw)) * Math.cos(FastMathLite.toRadians(pitch)) * 0.5, this.y + this.getEyeHeight() - 1, // below eyes
-                        this.z + Math.cos(FastMathLite.toRadians(yaw)) * Math.cos(FastMathLite.toRadians(pitch)) * 0.5, yaw, pitch, this.level);
+                EntityGhastFireBall shot = (EntityGhastFireBall) Entity.createEntity("GhastFireBall", this.add(0, this.getEyeHeight() - 1, 0), this);
 
-                if (this.getLevel().getBlockIdAt(pos.getFloorX(), pos.getFloorY(), pos.getFloorZ()) != Block.AIR) {
+                if (Utils.hasCollisionBlocks(shot.level, shot, shot.boundingBox)) {
+                    shot.close();
                     return;
                 }
 
-                EntityGhastFireBall fireball = (EntityGhastFireBall) Entity.createEntity("GhastFireBall", pos, this);
-                fireball.setExplode(true);
-                fireball.setMotion(new Vector3(-Math.sin(FastMathLite.toRadians(yaw)) * Math.cos(FastMathLite.toRadians(pitch)) * f * f, -Math.sin(FastMathLite.toRadians(pitch)) * f * f,
-                        Math.cos(FastMathLite.toRadians(yaw)) * Math.cos(FastMathLite.toRadians(pitch)) * f * f));
+                shot.setMotion(player.subtract(this).normalize().multiply(1.1));
 
-                ProjectileLaunchEvent launch = new ProjectileLaunchEvent(fireball);
+                ProjectileLaunchEvent launch = new ProjectileLaunchEvent(shot);
                 this.server.getPluginManager().callEvent(launch);
                 if (launch.isCancelled()) {
-                    fireball.close();
+                    shot.close();
                 } else {
-                    fireball.spawnToAll();
+                    shot.spawnToAll();
                     this.level.addLevelEvent(this, LevelEventPacket.EVENT_SOUND_GHAST_SHOOT);
                 }
             }
@@ -127,7 +118,10 @@ public class Ghast extends FlyingMonster {
     public Item[] getDrops() {
         List<Item> drops = new ArrayList<>();
 
-        drops.add(Item.get(Item.GUNPOWDER, 0, Utils.rand(0, 2)));
+        for (int i = 0; i < Utils.rand(0, 2); i++) {
+            drops.add(Item.get(Item.GUNPOWDER, 0, 1));
+        }
+
         drops.add(Item.get(Item.GHAST_TEAR, 0, Utils.rand(0, 1)));
 
         return drops.toArray(new Item[0]);
@@ -139,8 +133,8 @@ public class Ghast extends FlyingMonster {
     }
 
     @Override
-    public int nearbyDistanceMultiplier() {
-        return 1000; // don't follow
+    protected int nearbyDistanceMultiplier() {
+        return target instanceof EntityLiving || followTarget instanceof EntityLiving ? 1000 : 1; // don't follow
     }
 
     @Override

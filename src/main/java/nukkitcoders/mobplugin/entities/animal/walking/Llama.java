@@ -107,7 +107,7 @@ public class Llama extends HorseBase {
                     double x = this.damagedBy.x - this.x;
                     double z = this.damagedBy.z - this.z;
                     double diff = Math.abs(x) + Math.abs(z);
-                    if (diff != 0) {
+                    if (diff > 0.001) {
                         this.yaw = FastMathLite.toDegrees(-FastMathLite.atan2(x / diff, z / diff));
                     }
                     if (this.attackTicks == 0) {
@@ -150,7 +150,7 @@ public class Llama extends HorseBase {
 
         if (canTarget && (creature instanceof Player)) {
             Player player = (Player) creature;
-            return player.isAlive() && !player.closed && this.isFeedItem(player.getInventory().getItemInHand()) && distance <= 49;
+            return player.isAlive() && !player.closed && this.hasFeedItem(player) && distance <= 49;
         }
 
         return false;
@@ -161,7 +161,15 @@ public class Llama extends HorseBase {
         return item.getId() == Item.WHEAT;
     }
 
+    @Override
+    public void onPlayerInput(Player player, double strafe, double forward) {
+    }
+
     private static int getRandomVariant() {
         return VARIANTS[Utils.rand(0, VARIANTS.length - 1)];
+    }
+
+    @Override
+    public void onJump(Player player, int duration) {
     }
 }

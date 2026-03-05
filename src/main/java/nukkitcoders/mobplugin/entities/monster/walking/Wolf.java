@@ -74,15 +74,12 @@ public class Wolf extends TameableMonster {
     @Override
     protected void initEntity() {
         this.setMaxHealth(8);
-
         super.initEntity();
         
         this.setFriendly(true);
 
-        if (this.namedTag.contains(NBT_KEY_ANGRY)) {
-            if (this.namedTag.getByte(NBT_KEY_ANGRY) == 1) {
-                this.setAngry(true);
-            }
+        if (this.namedTag.getByte(NBT_KEY_ANGRY) == 1) {
+            this.setAngry(true);
         }
 
         if (this.namedTag.contains(NBT_KEY_COLLAR_COLOR)) {
@@ -114,13 +111,13 @@ public class Wolf extends TameableMonster {
         }
         
         if (creature instanceof Player) {
-            if (distance <= 64 && this.isBeggingItem(((Player) creature).getInventory().getItemInHand())) {
+            if (distance <= 64 && this.isBeggingItem(((Player) creature).getInventory().getItemInHandFast())) {
                 // TODO: Begging
                 if (distance <= 9) {
                     stayTime = 40;
                 }
                 return true;
-            } else if (this.hasOwner() && creature.equals(this.getOwner())) {
+            } else if (this.isOwner(creature)) {
                 if (distance <= 4) {
                     return false;
                 } else if (distance <= 100) {
@@ -129,7 +126,7 @@ public class Wolf extends TameableMonster {
             }
         }
         
-        if (!this.hasOwner() && distance <= 256 && (
+        if (distance <= 256 && !this.hasOwner() && (
             (creature instanceof Skeleton && !Utils.entityInsideWaterFast(creature)) ||
             creature instanceof Sheep ||
             creature instanceof Rabbit ||
@@ -139,7 +136,7 @@ public class Wolf extends TameableMonster {
             this.isAngryTo = creature.getId();
             this.setAngry(true);
             return true;
-        } else if (this.hasOwner() && distance <= 256 && creature instanceof Skeleton) {
+        } else if (distance <= 256 && creature instanceof Skeleton && this.hasOwner()) {
             this.isAngryTo = creature.getId();
             this.setAngry(true);
             return true;
@@ -154,7 +151,9 @@ public class Wolf extends TameableMonster {
 
     public void setAngry(boolean angry) {
         this.angry = angry;
-        this.setDataFlag(DATA_FLAGS, DATA_FLAG_ANGRY, angry);
+        if (!this.hasOwner()) {
+            this.setDataFlag(DATA_FLAGS, DATA_FLAG_ANGRY, angry);
+        }
         this.angryDuration = angry ? 500 : 0;
         this.setFriendly(!angry);
     }
@@ -192,7 +191,7 @@ public class Wolf extends TameableMonster {
                 }
             }
         } else if (item.getId() == Item.DYE) {
-            if (this.hasOwner() && player.equals(this.getOwner())) {
+            if (this.isOwner(player)) {
                 this.setCollarColor(((ItemDye) item).getDyeColor());
                 return true;
             }
@@ -208,7 +207,7 @@ public class Wolf extends TameableMonster {
             }
             
             return true;
-        } else if (this.hasOwner() && player.equals(this.getOwner()) && !this.isAngry()) {
+        } else if (this.isOwner(player) && !this.isAngry()) {
             this.setSitting(!this.isSitting());
         }
         
@@ -222,7 +221,7 @@ public class Wolf extends TameableMonster {
             if (ev instanceof EntityDamageByEntityEvent) {
                 if (((EntityDamageByEntityEvent) ev).getDamager() instanceof Player) {
                     Player player = (Player) ((EntityDamageByEntityEvent) ev).getDamager();
-                    if (!(player.isSurvival() || player.isAdventure()) || (this.hasOwner() && player.equals(this.getOwner()))) {
+                    if (!(player.isSurvival() || player.isAdventure()) || (this.isOwner(player))) {
                         return true;
                     }
                 }
@@ -238,9 +237,8 @@ public class Wolf extends TameableMonster {
     @Override
     public void attackEntity(Entity entity) {
         if (entity instanceof Player && (
-            (!this.isAngry() && this.isBeggingItem(((Player) entity).getInventory().getItemInHand())) ||
-            (this.hasOwner() && entity.equals(this.getOwner()))
-            )
+            (!this.isAngry() && this.isBeggingItem(((Player) entity).getInventory().getItemInHandFast())) ||
+            (this.isOwner(entity)))
         ) {
             return;
         }
@@ -275,24 +273,24 @@ public class Wolf extends TameableMonster {
         } else if (this.angryDuration > 0) {
             this.angryDuration--;
         }
-        
+
         if (Utils.entityInsideWaterFast(this)) {
             afterInWater = 0;
         } else if (afterInWater != -1) {
             afterInWater++;
         }
-        
+
         if (afterInWater > 60) {
             afterInWater = -1;
-            
+
             this.stayTime = 40;
-            
+
             EntityEventPacket packet = new EntityEventPacket();
             packet.eid = this.getId();
             packet.event = EntityEventPacket.SHAKE_WET;
             Server.broadcastPacket(this.getViewers().values(), packet);
         }
-        
+
         return hasUpdate;
     }
     
@@ -301,12 +299,13 @@ public class Wolf extends TameableMonster {
         if (this.isKnockback()) {
             return;
         }
-        
-        if (!this.isSitting() && this.hasOwner() && this.distanceSquared(this.getOwner()) > 144) {
+
+        Player owner;
+        if (!this.isSitting() && (owner = this.getOwner()) != null && this.distanceSquared(owner) > 144) {
             this.setAngry(false);
             this.setRoute(null);
             // TODO: Safe teleport (on ground)
-            this.teleport(this.getOwner());
+            this.teleport(owner);
             this.move(0, 0.0001, 0); // To fix floating problem
             return;
         }
@@ -353,13 +352,13 @@ public class Wolf extends TameableMonster {
         } else if (Utils.rand(1, 100) == 1) {
             x = Utils.rand(10, 30);
             z = Utils.rand(10, 30);
-            this.stayTime = Utils.rand(100, 200);
+            this.stayTime = Utils.rand(200, 400);
             this.target = this.add(Utils.rand() ? x : -x, Utils.rand(-20.0, 20.0) / 10, Utils.rand() ? z : -z);
         } else if (this.moveTime <= 0 || this.target == null) {
             x = Utils.rand(20, 100);
             z = Utils.rand(20, 100);
             this.stayTime = 0;
-            this.moveTime = Utils.rand(100, 200);
+            this.moveTime = Utils.rand(80, 200);
             this.target = this.add(Utils.rand() ? x : -x, 0, Utils.rand() ? z : -z);
         }
     }
@@ -377,7 +376,7 @@ public class Wolf extends TameableMonster {
     
     @Override
     public boolean canDespawn() {
-        if (this.hasOwner(false)) {
+        if (this.hasOwner()) {
             return false;
         }
         return super.canDespawn();
@@ -447,6 +446,6 @@ public class Wolf extends TameableMonster {
 
     @Override
     public boolean canTarget(Entity entity) {
-        return true;
+        return !entity.closed;
     }
 }

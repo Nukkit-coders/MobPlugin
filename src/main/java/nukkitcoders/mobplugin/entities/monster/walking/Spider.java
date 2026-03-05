@@ -10,8 +10,8 @@ import cn.nukkit.event.entity.EntityDamageEvent;
 import cn.nukkit.item.Item;
 import cn.nukkit.level.Level;
 import cn.nukkit.level.format.FullChunk;
+import cn.nukkit.math.BlockFace;
 import cn.nukkit.math.NukkitMath;
-import cn.nukkit.math.Vector3;
 import cn.nukkit.nbt.tag.CompoundTag;
 import nukkitcoders.mobplugin.entities.monster.WalkingMonster;
 import nukkitcoders.mobplugin.utils.Utils;
@@ -55,28 +55,34 @@ public class Spider extends WalkingMonster implements EntityArthropod {
         super.initEntity();
 
         this.setDamage(new float[] { 0, 2, 2, 3 });
+        this.setDataFlag(DATA_FLAGS_EXTENDED, DATA_FLAG_RENDER_WHEN_INVISIBLE, true);
     }
 
     @Override
     protected boolean checkJump(double dx, double dz) {
-        if (this.motionY == this.getGravity() * 2) {
-            return this.canSwimIn(level.getBlockIdAt(NukkitMath.floorDouble(this.x), (int) this.y, NukkitMath.floorDouble(this.z)));
+        if (this.motionY == this.getGravity() * 2 && this.canSwimIn(level.getBlockIdAt(this.chunk, this.getFloorX(), this.getFloorY(), this.getFloorZ()))) {
+            return true;
         } else {
-            if (this.canSwimIn(level.getBlockIdAt(NukkitMath.floorDouble(this.x), (int) (this.y + 0.8), NukkitMath.floorDouble(this.z)))) {
+            if (this.canSwimIn(level.getBlockIdAt(this.chunk, NukkitMath.floorDouble(this.x), (int) (this.y + 0.8), NukkitMath.floorDouble(this.z)))) {
                 this.motionY = this.getGravity() * 2;
                 return true;
             }
         }
 
-        try {
-            Block block = this.getLevel().getBlock(new Vector3(NukkitMath.floorDouble(this.x + dx), (int) this.y, NukkitMath.floorDouble(this.z + dz)));
-            Block directionBlock = block.getSide(this.getDirection());
-            if (!directionBlock.canPassThrough()) {
-                this.motionY = this.getGravity() * 3;
-                return true;
-            }
-        } catch (Exception ignore) {}
+        if (this.followTarget == null && (!this.onGround || this.stayTime > 0)) {
+            return false;
+        }
 
+        Block block = this.getLevel().getBlock(this.chunk, NukkitMath.floorDouble(this.x + dx), this.getFloorY(), NukkitMath.floorDouble(this.z + dz), false);
+        BlockFace direction = this.getDirection();
+        if (direction == null) {
+            return false;
+        }
+        Block directionBlock = block.getSide(direction);
+        if (!directionBlock.canPassThrough()) {
+            this.motionY = this.getGravity() * 3;
+            return true;
+        }
         return false;
     }
 

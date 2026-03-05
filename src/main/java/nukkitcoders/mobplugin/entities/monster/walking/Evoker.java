@@ -2,6 +2,7 @@ package nukkitcoders.mobplugin.entities.monster.walking;
 
 import cn.nukkit.Player;
 import cn.nukkit.entity.Entity;
+import cn.nukkit.entity.EntityLiving;
 import cn.nukkit.event.entity.EntityDamageByEntityEvent;
 import cn.nukkit.event.entity.EntityDamageEvent;
 import cn.nukkit.item.Item;
@@ -34,7 +35,7 @@ public class Evoker extends WalkingMonster {
 
     @Override
     public float getHeight() {
-        return 1.95f;
+        return 1.9f;
     }
 
     @Override
@@ -85,7 +86,12 @@ public class Evoker extends WalkingMonster {
     }
 
     @Override
-    public int nearbyDistanceMultiplier() {
-        return 20;
+    protected int nearbyDistanceMultiplier() {
+        return target instanceof EntityLiving || followTarget instanceof EntityLiving ? 10 : 1;
+    }
+
+    @Override
+    public boolean canDespawn() {
+        return false;
     }
 }

@@ -30,6 +30,7 @@ import it.unimi.dsi.fastutil.longs.LongArraySet;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class WitherSkullExplosion extends Explosion {
 
@@ -60,6 +61,7 @@ public class WitherSkullExplosion extends Explosion {
 
         Vector3 vector = new Vector3(0, 0, 0);
         Vector3 vBlock = new Vector3(0, 0, 0);
+        ThreadLocalRandom random = ThreadLocalRandom.current();
 
         int mRays = 15;
         for (int i = 0; i < 16; ++i) {
@@ -73,7 +75,7 @@ public class WitherSkullExplosion extends Explosion {
                         double pointerY = this.source.y;
                         double pointerZ = this.source.z;
 
-                        for (double blastForce = this.size * (Utils.random.nextInt(700, 1301)) / 1000d; blastForce > 0; blastForce -= 0.22499999999999998) {
+                        for (double blastForce = this.size * (random.nextInt(700, 1301)) / 1000d; blastForce > 0; blastForce -= 0.22499999999999998) {
                             int x = (int) pointerX;
                             int y = (int) pointerY;
                             int z = (int) pointerZ;

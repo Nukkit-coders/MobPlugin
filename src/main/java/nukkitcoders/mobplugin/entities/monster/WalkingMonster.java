@@ -25,16 +25,6 @@ public abstract class WalkingMonster extends WalkingEntity implements Monster {
         this.route = new WalkerRouteFinder(this);
     }
 
-    @Override
-    public void setFollowTarget(Entity target) {
-        this.setFollowTarget(target, true);
-    }
-
-    public void setFollowTarget(Entity target, boolean attack) {
-        super.setFollowTarget(target);
-        this.canAttack = attack;
-    }
-
     public float getDamage() {
         return getDamage(null);
     }

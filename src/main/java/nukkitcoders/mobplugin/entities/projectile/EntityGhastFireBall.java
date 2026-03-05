@@ -37,7 +37,7 @@ public class EntityGhastFireBall extends EntityProjectile implements EntityExplo
 
     @Override
     public float getGravity() {
-        return 0.001f;
+        return 0.005f;
     }
 
     @Override
@@ -104,10 +104,11 @@ public class EntityGhastFireBall extends EntityProjectile implements EntityExplo
             return;
         }
         this.close();
-        EntityExplosionPrimeEvent ev = new EntityExplosionPrimeEvent(this, 1.2);
+        EntityExplosionPrimeEvent ev = new EntityExplosionPrimeEvent(this, 1);
         this.server.getPluginManager().callEvent(ev);
         if (!ev.isCancelled()) {
             FireBallExplosion explosion = new FireBallExplosion(this, (float) ev.getForce(), this.shootingEntity);
+            explosion.setFireSpawnChance(0.3333);
             if (ev.isBlockBreaking() && this.level.getGameRules().getBoolean(GameRule.MOB_GRIEFING)) {
                 explosion.explodeA();
             }

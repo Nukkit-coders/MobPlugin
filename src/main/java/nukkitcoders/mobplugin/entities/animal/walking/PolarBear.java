@@ -19,7 +19,7 @@ public class PolarBear extends WalkingMonster {
 
     public static final int NETWORK_ID = 28;
 
-    private int angry = 0;
+    private int angry;
 
     public PolarBear(FullChunk chunk, CompoundTag nbt) {
         super(chunk, nbt);
@@ -61,9 +61,8 @@ public class PolarBear extends WalkingMonster {
         this.setMaxHealth(30);
         super.initEntity();
         this.setDamage(new float[] { 0, 4, 6, 9 });
-        if (this.namedTag.contains("Angry")) {
-            this.angry = this.namedTag.getInt("Angry");
-        }
+
+        this.angry = this.namedTag.getInt("Angry");
     }
 
     @Override
@@ -142,5 +141,10 @@ public class PolarBear extends WalkingMonster {
         }
 
         return super.entityBaseTick(tickDiff);
+    }
+
+    @Override
+    protected float getFreezingDamage() {
+        return 0f;
     }
 }

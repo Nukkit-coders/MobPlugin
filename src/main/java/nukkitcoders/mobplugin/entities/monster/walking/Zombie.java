@@ -3,20 +3,24 @@ package nukkitcoders.mobplugin.entities.monster.walking;
 import cn.nukkit.Player;
 import cn.nukkit.entity.Entity;
 import cn.nukkit.entity.EntityAgeable;
+import cn.nukkit.entity.EntityCreature;
 import cn.nukkit.entity.EntitySmite;
+import cn.nukkit.entity.item.EntityItem;
+import cn.nukkit.entity.mob.EntityZombieVillagerV1;
 import cn.nukkit.event.entity.CreatureSpawnEvent;
 import cn.nukkit.event.entity.EntityDamageByEntityEvent;
 import cn.nukkit.event.entity.EntityDamageEvent;
+import cn.nukkit.inventory.PlayerInventory;
 import cn.nukkit.item.Item;
-import cn.nukkit.item.ItemShovelIron;
-import cn.nukkit.item.ItemSwordIron;
+import cn.nukkit.item.ItemSkull;
+import cn.nukkit.level.GameRule;
 import cn.nukkit.level.format.FullChunk;
 import cn.nukkit.nbt.NBTIO;
 import cn.nukkit.nbt.tag.CompoundTag;
 import cn.nukkit.nbt.tag.ListTag;
 import cn.nukkit.network.protocol.MobArmorEquipmentPacket;
 import cn.nukkit.network.protocol.MobEquipmentPacket;
-import nukkitcoders.mobplugin.MobPlugin;
+import nukkitcoders.mobplugin.entities.animal.walking.Villager;
 import nukkitcoders.mobplugin.entities.monster.WalkingMonster;
 import nukkitcoders.mobplugin.utils.Utils;
 
@@ -29,6 +33,10 @@ public class Zombie extends WalkingMonster implements EntityAgeable, EntitySmite
     public static final int NETWORK_ID = 32;
 
     private Item tool;
+
+    private boolean hasPlayerItem;
+
+    private boolean pickupItems;
 
     public Zombie(FullChunk chunk, CompoundTag nbt) {
         super(chunk, nbt);
@@ -46,7 +54,7 @@ public class Zombie extends WalkingMonster implements EntityAgeable, EntitySmite
 
     @Override
     public float getHeight() {
-        return 1.95f;
+        return 1.9f;
     }
 
     @Override
@@ -83,18 +91,19 @@ public class Zombie extends WalkingMonster implements EntityAgeable, EntitySmite
             this.armor = getRandomArmor();
         }
 
-        this.addArmorExtraHealth();
+        this.addArmorExtraHealth(); //TODO: replace with actual damage modifier
 
         if (this.namedTag.contains("Item")) {
             this.tool = NBTIO.getItemHelper(this.namedTag.getCompound("Item"));
-            if (tool instanceof ItemSwordIron) {
-                this.setDamage(new float[]{0, 4, 6, 8});
-            } else if (tool instanceof ItemShovelIron) {
-                this.setDamage(new float[]{0, 3, 4, 5});
+
+            if (this.tool != null) {
+                this.hasPlayerItem = this.namedTag.getBoolean("hasPlayerItem");
             }
         } else {
             this.setRandomTool();
         }
+
+        this.pickupItems = this.level.getGameRules().getBoolean(GameRule.MOB_GRIEFING);
     }
 
     @Override
@@ -102,7 +111,11 @@ public class Zombie extends WalkingMonster implements EntityAgeable, EntitySmite
         if (this.attackDelay > 23 && target.distanceSquared(this) <= 1) {
             this.attackDelay = 0;
             HashMap<EntityDamageEvent.DamageModifier, Float> damage = new HashMap<>();
-            damage.put(EntityDamageEvent.DamageModifier.BASE, (float) this.getDamage());
+            float attackDamage = this.getDamage();
+            if (attackDamage != 0 && this.tool != null && this.tool.getAttackDamage() > 0) {
+                attackDamage += this.tool.getAttackDamage() - 1;
+            }
+            damage.put(EntityDamageEvent.DamageModifier.BASE, attackDamage);
 
             if (target instanceof Player) {
                 float points = 0;
@@ -115,6 +128,20 @@ public class Zombie extends WalkingMonster implements EntityAgeable, EntitySmite
             }
             target.attack(new EntityDamageByEntityEvent(this, target, EntityDamageEvent.DamageCause.ENTITY_ATTACK, damage));
             this.playAttack();
+
+            if (target instanceof Villager && this.getServer().getDifficulty() > 1 && Utils.rand()) {
+                CreatureSpawnEvent cse = new CreatureSpawnEvent(EntityZombieVillagerV1.NETWORK_ID, this, new CompoundTag(), CreatureSpawnEvent.SpawnReason.INFECTION);
+                level.getServer().getPluginManager().callEvent(cse);
+
+                if (!cse.isCancelled()) {
+                    Entity ent = Entity.createEntity("ZombieVillager", this);
+                    if (ent != null) {
+                        ent.setHealth(target.getHealth());
+                        target.close();
+                        ent.spawnToAll();
+                    }
+                }
+            }
         }
     }
 
@@ -127,11 +154,48 @@ public class Zombie extends WalkingMonster implements EntityAgeable, EntitySmite
 
         boolean hasUpdate = super.entityBaseTick(tickDiff);
 
-        if (!this.closed && MobPlugin.shouldMobBurn(level, this)) {
-            if (this.armor[0] == null) {
-                this.setOnFire(100);
-            } else if (this.armor[0].getId() == 0) {
-                this.setOnFire(100);
+        if (!this.closed && this.isAlive()) {
+            if (shouldMobBurn()) {
+                if (this.armor[0] == null) {
+                    this.setOnFire(100);
+                } else if (this.armor[0].getId() == 0) {
+                    this.setOnFire(100);
+                }
+            }
+
+            if (this.pickupItems && this.tool == null && this.age % 60 == 0) {
+                Entity[] entities = level.getCollidingEntities(this.boundingBox);
+                for (Entity entity : entities) {
+                    if (entity instanceof EntityItem) {
+                        Item item = ((EntityItem) entity).getItem();
+                        if (item != null && item.getCount() == 1 && item.getId() != Item.SHULKER_BOX && item.getId() != Item.UNDYED_SHULKER_BOX) {
+                            Player droppedBy = ((EntityItem) entity).droppedBy;
+                            if (droppedBy != null) {
+                                droppedBy.awardAchievement("diamondsToYou");
+                            }
+                            entity.close();
+                            this.tool = item;
+                            this.hasPlayerItem = true;
+                            this.getViewers().forEach((id, pl) -> this.sendTool(pl));
+                        }
+                        break;
+                    }
+                }
+            }
+
+            if (this.age % 111 == 0) {
+                if (this.getLevel().getEntity(this.isAngryTo) == null) {
+                    this.isAngryTo = -1;
+
+                    for (Entity e : this.getChunk().getEntities().values()) {
+                        if (e instanceof Villager) {
+                            this.isAngryTo = e.getId();
+                            this.target = e;
+                            this.followTarget = e;
+                            break;
+                        }
+                    }
+                }
             }
         }
 
@@ -148,12 +212,12 @@ public class Zombie extends WalkingMonster implements EntityAgeable, EntitySmite
             }
 
             if (this.tool != null) {
-                if (Utils.rand(1, 3) == 1) {
-                    drops.add(tool);
+                if (this.hasPlayerItem || Utils.rand(1, 3) == 1) {
+                    drops.add(this.tool);
                 }
             }
 
-            if (this.armor != null && armor.length == 4 && Utils.rand(1, 3) == 1) {
+            if (this.armor != null && armor.length == 4 && Utils.rand(1, 3) == 1) { // TODO: always drop picked up armor
                 drops.add(armor[Utils.rand(0, 3)]);
             }
 
@@ -170,6 +234,8 @@ public class Zombie extends WalkingMonster implements EntityAgeable, EntitySmite
                         break;
                 }
             }
+        } else if (this.tool != null && this.hasPlayerItem) { // always drop picked up items
+            drops.add(this.tool);
         }
 
         return drops.toArray(new Item[0]);
@@ -184,30 +250,23 @@ public class Zombie extends WalkingMonster implements EntityAgeable, EntitySmite
     public void spawnTo(Player player) {
         super.spawnTo(player);
 
-        if (this.armor[0] != null && (this.armor[0].getId() != 0 || this.armor[1].getId() != 0 || this.armor[2].getId() != 0 || this.armor[3].getId() != 0)) {
+        if (this.armor[0].getId() != 0 || this.armor[1].getId() != 0 || this.armor[2].getId() != 0 || this.armor[3].getId() != 0) {
             MobArmorEquipmentPacket pk = new MobArmorEquipmentPacket();
             pk.eid = this.getId();
             pk.slots = this.armor;
+
             player.dataPacket(pk);
         }
 
-        if (this.tool != null) {
-            MobEquipmentPacket pk2 = new MobEquipmentPacket();
-            pk2.eid = this.getId();
-            pk2.hotbarSlot = 0;
-            pk2.item = this.tool;
-            player.dataPacket(pk2);
-        }
+        this.sendTool(player);
     }
 
     private void setRandomTool() {
         if (Utils.rand(1, 10) == 5) {
             if (Utils.rand(1, 3) == 1) {
                 this.tool = Item.get(Item.IRON_SWORD, Utils.rand(200, 246), 1);
-                this.setDamage(new float[]{0, 4, 6, 8});
             } else {
                 this.tool = Item.get(Item.IRON_SHOVEL, Utils.rand(200, 246), 1);
-                this.setDamage(new float[]{0, 3, 4, 5});
             }
         }
     }
@@ -216,14 +275,15 @@ public class Zombie extends WalkingMonster implements EntityAgeable, EntitySmite
     public boolean attack(EntityDamageEvent ev) {
         super.attack(ev);
 
-        if (!ev.isCancelled() && ev.getCause() == EntityDamageEvent.DamageCause.DROWNING) {
-            CreatureSpawnEvent cse = new CreatureSpawnEvent(Drowned.NETWORK_ID, this, new CompoundTag(), CreatureSpawnEvent.SpawnReason.DROWNED);
+        if (!ev.isCancelled() && ev.getCause() == EntityDamageEvent.DamageCause.DROWNING && !(this instanceof ZombieVillager)) {
+            CompoundTag nbt = Entity.getDefaultNBT(this).putBoolean("HandItemSet", true);
+            CreatureSpawnEvent cse = new CreatureSpawnEvent(Drowned.NETWORK_ID, this, nbt, CreatureSpawnEvent.SpawnReason.DROWNED);
             level.getServer().getPluginManager().callEvent(cse);
 
             if (!cse.isCancelled()) {
-                CompoundTag nbt = Entity.getDefaultNBT(this).putBoolean("HandItemSet", true);
                 Entity ent = Entity.createEntity(Drowned.NETWORK_ID, this.getChunk(), nbt);
                 if (ent != null) {
+                    // According to Minecraft Wiki the drowned always spawns with full health
                     this.close();
                     ent.spawnToAll();
                 }
@@ -244,6 +304,7 @@ public class Zombie extends WalkingMonster implements EntityAgeable, EntitySmite
     private void saveTool() {
         if (tool != null) {
             this.namedTag.put("Item", NBTIO.putItemHelper(tool));
+            this.namedTag.putBoolean("hasPlayerItem", hasPlayerItem);
         }
     }
 
@@ -257,11 +318,52 @@ public class Zombie extends WalkingMonster implements EntityAgeable, EntitySmite
         }
     }
 
+    private void sendTool(Player p) {
+        if (this.tool != null) {
+            MobEquipmentPacket pk = new MobEquipmentPacket();
+            pk.eid = this.getId();
+            pk.hotbarSlot = 0;
+            pk.item = this.tool;
+            p.dataPacket(pk);
+        }
+    }
+
+    @Override
+    public boolean canDespawn() {
+        return !this.hasPlayerItem && super.canDespawn();
+    }
+
+    @Override
+    public boolean targetOption(EntityCreature creature, double distance) {
+        return (creature instanceof Villager && creature.getId() == this.isAngryTo && creature.isAlive() && distance <= 1764) || targetOptionInternal(creature, distance);
+    }
+
+    @Override
+    public boolean canTarget(Entity entity) {
+        return (entity.getId() == this.isAngryTo || entity instanceof Player);
+    }
+
     /**
      * Get held tool
      * @return the tool this zombie has in hand or null
      */
     public Item getTool() {
         return this.tool;
+    }
+
+    private boolean targetOptionInternal(EntityCreature creature, double distance) {
+        if (creature instanceof Player) {
+            Player player = (Player) creature;
+            if (!player.closed && player.spawned && player.isAlive() && (player.isSurvival() || player.isAdventure())) {
+                PlayerInventory inv = player.getInventory();
+                Item helmet;
+                if (inv != null && (helmet = inv.getHelmetFast()).getId() == Item.SKULL && helmet.getDamage() == ItemSkull.ZOMBIE_HEAD) {
+                    return distance <= 64;
+                }
+                return distance <= 256;
+            }
+            return false;
+        }
+        return creature.isAlive() && !creature.closed && distance <= 256;
     }
 }

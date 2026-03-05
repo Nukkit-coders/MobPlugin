@@ -50,7 +50,7 @@ public class Guardian extends SwimmingMonster {
     public boolean targetOption(EntityCreature creature, double distance) {
         if (creature instanceof Player) {
             Player player = (Player) creature;
-            return (!player.closed) && player.spawned && player.isAlive() && (player.isSurvival() || player.isAdventure()) && distance <= 100;
+            return (!player.closed) && player.spawned && player.isAlive() && (player.isSurvival() || player.isAdventure()) && distance <= 256; // 15 blocks
         } else if (creature instanceof Squid) {
             return creature.isAlive() && this.distanceSquared(creature) <= 80;
         }
@@ -59,18 +59,21 @@ public class Guardian extends SwimmingMonster {
 
     @Override
     public void attackEntity(Entity player) {
-        HashMap<EntityDamageEvent.DamageModifier, Float> damage = new HashMap<>();
-        damage.put(EntityDamageEvent.DamageModifier.BASE, 1F);
+        if (this.attackDelay > 40 && target.distanceSquared(this) <= 225) {
+            this.attackDelay = 0;
 
-        float points = 0;
-        for (Item i : ((Player) player).getInventory().getArmorContents()) {
-            points += this.getArmorPoints(i.getId());
+            HashMap<EntityDamageEvent.DamageModifier, Float> damage = new HashMap<>();
+            damage.put(EntityDamageEvent.DamageModifier.BASE, 1F);
+            if (player instanceof Player) {
+                float points = 0;
+                for (Item i : ((Player) player).getInventory().getArmorContents()) {
+                    points += this.getArmorPoints(i.getId());
+                }
+                damage.put(EntityDamageEvent.DamageModifier.ARMOR,
+                        (float) (damage.getOrDefault(EntityDamageEvent.DamageModifier.ARMOR, 0f) - Math.floor(damage.getOrDefault(EntityDamageEvent.DamageModifier.BASE, 1f) * points * 0.04)));
+            }
+            player.attack(new EntityDamageByEntityEvent(this, player, EntityDamageEvent.DamageCause.ENTITY_ATTACK, damage));
         }
-
-        damage.put(EntityDamageEvent.DamageModifier.ARMOR,
-                (float) (damage.getOrDefault(EntityDamageEvent.DamageModifier.ARMOR, 0f) - Math.floor(damage.getOrDefault(EntityDamageEvent.DamageModifier.BASE, 1f) * points * 0.04)));
-        player.attack(new EntityDamageByEntityEvent(this, player, EntityDamageEvent.DamageCause.MAGIC, damage));
-
     }
 
     @Override
@@ -108,5 +111,10 @@ public class Guardian extends SwimmingMonster {
     @Override
     public int getKillExperience() {
         return 10;
+    }
+
+    @Override
+    public boolean canDespawn() {
+        return false; // TODO: spawning
     }
 }

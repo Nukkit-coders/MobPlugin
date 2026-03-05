@@ -5,20 +5,21 @@ import cn.nukkit.block.Block;
 import cn.nukkit.block.BlockID;
 import cn.nukkit.entity.Entity;
 import cn.nukkit.entity.EntityCreature;
+import cn.nukkit.entity.data.IntEntityData;
 import cn.nukkit.event.entity.EntityDamageByEntityEvent;
 import cn.nukkit.event.entity.EntityDamageEvent;
 import cn.nukkit.event.player.PlayerTeleportEvent;
 import cn.nukkit.item.Item;
-import cn.nukkit.level.Level;
-import cn.nukkit.level.Location;
-import cn.nukkit.level.Sound;
+import cn.nukkit.level.*;
 import cn.nukkit.level.biome.EnumBiome;
 import cn.nukkit.level.format.FullChunk;
 import cn.nukkit.math.NukkitMath;
 import cn.nukkit.math.Vector3;
+import cn.nukkit.nbt.NBTIO;
 import cn.nukkit.nbt.tag.CompoundTag;
+import cn.nukkit.utils.Utils;
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import nukkitcoders.mobplugin.entities.monster.WalkingMonster;
-import nukkitcoders.mobplugin.utils.Utils;
 
 import java.util.HashMap;
 
@@ -29,6 +30,12 @@ public class Enderman extends WalkingMonster {
     private int angry = 0;
 
     private boolean teleported;
+
+    private boolean pickupBlocks;
+
+    private Item block;
+
+    private static final IntOpenHashSet canPickup = new IntOpenHashSet(new int[]{BlockID.DIRT, BlockID.GRASS, BlockID.PODZOL, BlockID.MYCELIUM, BlockID.COBBLESTONE, BlockID.SAND, BlockID.GRAVEL});
 
     public Enderman(FullChunk chunk, CompoundTag nbt) {
         super(chunk, nbt);
@@ -60,6 +67,13 @@ public class Enderman extends WalkingMonster {
         super.initEntity();
 
         this.setDamage(new float[]{0, 4, 7, 10});
+
+        if (this.namedTag.contains("Block")) {
+            this.block = NBTIO.getItemHelper(this.namedTag.getCompound("Block"));
+            this.setDataProperty(new IntEntityData(DATA_ENDERMAN_HELD_RUNTIME_ID, GlobalBlockPalette.getOrCreateRuntimeId(this.block.getId(), this.block.getDamage())));
+        }
+
+        this.pickupBlocks = this.level.getGameRules().getBoolean(GameRule.MOB_GRIEFING);
     }
 
     @Override
@@ -109,6 +123,9 @@ public class Enderman extends WalkingMonster {
 
     @Override
     public Item[] getDrops() {
+        if (this.block != null) {
+            return new Item[]{Item.get(Item.ENDER_PEARL, 0, Utils.rand(0, 1)), block};
+        }
         return new Item[]{Item.get(Item.ENDER_PEARL, 0, Utils.rand(0, 1))};
     }
 
@@ -138,17 +155,39 @@ public class Enderman extends WalkingMonster {
             }
         }
 
-        int b = level.getBlockIdAt(NukkitMath.floorDouble(this.x), (int) this.y, NukkitMath.floorDouble(this.z));
-        if (b == BlockID.WATER || b == BlockID.STILL_WATER || (this.level.isRaining() && Utils.rand() && this.level.canBlockSeeSky(this) && EnumBiome.getBiome(level.getBiomeId((int) x, (int) z)).canRain())) {
+        int b = level.getBlockIdAt(this.chunk, NukkitMath.floorDouble(this.x), (int) this.y, NukkitMath.floorDouble(this.z));
+        if (b == BlockID.WATER || b == BlockID.STILL_WATER || (this.level.isRaining() && Utils.rand() && this.canSeeSky() && EnumBiome.getBiome(level.getBiomeId((int) x, (int) z)).canRain())) {
             this.attack(new EntityDamageEvent(this, EntityDamageEvent.DamageCause.DROWNING, 1));
             this.setAngry(0);
             this.teleport();
         } else if (Utils.rand(0, 500) == 20) {
             this.setAngry(0);
             this.teleport();
+        } else if (this.pickupBlocks && block == null && this.age != 0 && this.age % 300 == 0 && Utils.rand(0, 20) == 5) {
+            Vector3 pos = new Vector3(NukkitMath.floorDouble(this.x), ((int) this.y) - 1, NukkitMath.floorDouble(this.z));
+            Block block = level.getBlock(this.chunk, pos.getFloorX(), pos.getFloorY(), pos.getFloorZ(), true);
+            if (canPickup.contains(block.getId())) {
+                this.pickupBlock(block);
+            }
         }
 
         return super.entityBaseTick(tickDiff);
+    }
+
+    private void pickupBlock(Block block) {
+        if (!block.isValid()) {
+            return;
+        }
+
+        /*EndermanBlockPickUpEvent event = new EndermanBlockPickUpEvent(this, block);
+        this.getServer().getPluginManager().callEvent(event);
+        if (event.isCancelled()) {
+            return;
+        }*/
+
+        level.setBlock(block, Block.get(Block.AIR));
+        this.block = block.toItem();
+        this.setDataProperty(new IntEntityData(DATA_ENDERMAN_HELD_RUNTIME_ID, GlobalBlockPalette.getOrCreateRuntimeId(block.getId(), block.getDamage())));
     }
 
     public void teleport() {
@@ -172,7 +211,7 @@ public class Enderman extends WalkingMonster {
         int previousY1 = -1;
         int previousY2 = -1;
         if (chunk != null && chunk.isGenerated()) {
-            for (int y = Math.min(255, (int) pos.y); y >= 0; y--) {
+            for (int y = Math.min(this.level.getMaxBlockY(), (int) pos.y); y >= 0; y--) {
                 if (previousY1 > -1 && previousY2 > -1) {
                     if (Block.solid[chunk.getBlockId(x, y, z)] && chunk.getBlockId(x, previousY1, z) == 0 && chunk.getBlockId(x, previousY2, z) == 0) {
                         return new Location(pos.x + 0.5, previousY1 + 0.1, pos.z + 0.5, this.level);
@@ -191,7 +230,7 @@ public class Enderman extends WalkingMonster {
             return false;
         }
 
-        return super.canDespawn();
+        return this.block == null && super.canDespawn();
     }
 
     public boolean isAngry() {
@@ -222,5 +261,17 @@ public class Enderman extends WalkingMonster {
             setAngry(2400);
         }
     }
-}
 
+    @Override
+    public void saveNBT() {
+        super.saveNBT();
+
+        this.saveBlock();
+    }
+
+    private void saveBlock() {
+        if (block != null) {
+            this.namedTag.put("Block", NBTIO.putItemHelper(block));
+        }
+    }
+}

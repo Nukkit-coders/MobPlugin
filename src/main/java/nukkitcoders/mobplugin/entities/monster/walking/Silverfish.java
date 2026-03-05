@@ -1,14 +1,20 @@
 package nukkitcoders.mobplugin.entities.monster.walking;
 
 import cn.nukkit.Player;
+import cn.nukkit.block.Block;
+import cn.nukkit.block.BlockBricksStone;
+import cn.nukkit.block.BlockMonsterEgg;
 import cn.nukkit.entity.Entity;
 import cn.nukkit.entity.EntityArthropod;
 import cn.nukkit.event.entity.EntityDamageByEntityEvent;
 import cn.nukkit.event.entity.EntityDamageEvent;
 import cn.nukkit.item.Item;
+import cn.nukkit.level.GameRule;
 import cn.nukkit.level.format.FullChunk;
+import cn.nukkit.level.particle.ExplodeParticle;
 import cn.nukkit.nbt.tag.CompoundTag;
 import nukkitcoders.mobplugin.entities.monster.WalkingMonster;
+import nukkitcoders.mobplugin.utils.Utils;
 
 import java.util.HashMap;
 
@@ -71,5 +77,39 @@ public class Silverfish extends WalkingMonster implements EntityArthropod {
     @Override
     public int getKillExperience() {
         return 5;
+    }
+
+    @Override
+    public boolean entityBaseTick(int tickDiff) {
+        boolean update = super.entityBaseTick(tickDiff);
+        if (this.closed) {
+            return false;
+        }
+        if (isCollided && followTarget == null && !(target instanceof Entity) && age % 100 == 0 && Utils.rand(0, 5) == 3 && level.getGameRules().getBoolean(GameRule.MOB_GRIEFING)) {
+            Block[] blocks = this.level.getCollisionBlocks(this.getBoundingBox().grow(0.1, 0.1, 0.1));
+            for (Block b : blocks) {
+                int id = b.getId();
+                switch (id) {
+                    case Block.STONE:
+                        this.level.setBlockAt((int) b.x, (int) b.y, (int) b.z, Block.MONSTER_EGG, BlockMonsterEgg.STONE);
+                        this.getLevel().addParticle(new ExplodeParticle(b.add(0.5, 1, 0.5)));
+                        this.close();
+                        break;
+                    case Block.COBBLESTONE:
+                        this.level.setBlockAt((int) b.x, (int) b.y, (int) b.z, Block.MONSTER_EGG, BlockMonsterEgg.COBBLESTONE);
+                        this.getLevel().addParticle(new ExplodeParticle(b.add(0.5, 1, 0.5)));
+                        this.close();
+                        break;
+                    case Block.STONE_BRICK:
+                        this.level.setBlockAt((int) b.x, (int) b.y, (int) b.z, Block.MONSTER_EGG,
+                                b.getDamage() == BlockBricksStone.NORMAL ? BlockMonsterEgg.STONE_BRICK : b.getDamage() == BlockBricksStone.MOSSY ? BlockMonsterEgg.MOSSY_BRICK : b.getDamage() == BlockBricksStone.CRACKED ? BlockMonsterEgg.CRACKED_BRICK : b.getDamage() == BlockBricksStone.CHISELED ? BlockMonsterEgg.CHISELED_BRICK : 0);
+                        this.getLevel().addParticle(new ExplodeParticle(b.add(0.5, 1, 0.5)));
+                        this.close();
+                        break;
+                }
+            }
+
+        }
+        return update;
     }
 }

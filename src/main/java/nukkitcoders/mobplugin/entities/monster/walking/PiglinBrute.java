@@ -33,7 +33,7 @@ public class PiglinBrute extends WalkingMonster {
 
     @Override
     public float getHeight() {
-        return 1.95f;
+        return 1.9f;
     }
 
     @Override
@@ -69,5 +69,10 @@ public class PiglinBrute extends WalkingMonster {
     @Override
     public String getName() {
         return this.hasCustomName() ? this.getNameTag() : "Piglin Brute";
+    }
+
+    @Override
+    public boolean canDespawn() {
+        return false;
     }
 }

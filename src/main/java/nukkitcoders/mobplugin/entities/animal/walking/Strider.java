@@ -2,9 +2,7 @@ package nukkitcoders.mobplugin.entities.animal.walking;
 
 import cn.nukkit.Player;
 import cn.nukkit.block.BlockID;
-import cn.nukkit.entity.Entity;
-import cn.nukkit.entity.EntityCreature;
-import cn.nukkit.entity.EntityRideable;
+import cn.nukkit.entity.*;
 import cn.nukkit.entity.data.FloatEntityData;
 import cn.nukkit.entity.data.Vector3fEntityData;
 import cn.nukkit.item.Item;
@@ -23,7 +21,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
-public class Strider extends WalkingAnimal implements EntityRideable {
+public class Strider extends WalkingAnimal implements EntityRideable, EntityControllable {
 
     public final static int NETWORK_ID = 125;
 
@@ -129,8 +127,9 @@ public class Strider extends WalkingAnimal implements EntityRideable {
         this.setDataFlag(DATA_FLAGS, DATA_FLAG_SADDLED, saddled);
     }
 
+    @Override
     public void onPlayerInput(Player player, double strafe, double forward) {
-        if (player.getInventory().getItemInHand().getId() == Item.WARPED_FUNGUS_ON_A_STICK) {
+        if (player.getInventory().getItemInHandFast().getId() == Item.WARPED_FUNGUS_ON_A_STICK) {
             this.stayTime = 0;
             this.moveTime = 10;
             this.route = null;
@@ -165,7 +164,7 @@ public class Strider extends WalkingAnimal implements EntityRideable {
 
     @Override
     protected void checkTarget() {
-        if (this.passengers.isEmpty() || !(this.getPassengers().get(0) instanceof Player) || ((Player) this.getPassengers().get(0)).getInventory().getItemInHand().getId() != Item.WARPED_FUNGUS_ON_A_STICK) {
+        if (this.passengers.isEmpty() || !(this.getPassengers().get(0) instanceof Player) || ((Player) this.getPassengers().get(0)).getInventory().getItemInHandFast().getId() != Item.WARPED_FUNGUS_ON_A_STICK) {
             super.checkTarget();
         }
     }
@@ -222,6 +221,7 @@ public class Strider extends WalkingAnimal implements EntityRideable {
         } else if (this.isSaddled() && this.passengers.isEmpty() && !this.isBaby() && !player.isSneaking()) {
             if (player.riding == null) {
                 this.mountEntity(player);
+                this.sendHealthToRider();
             }
         }
         return super.onInteract(player, item, clickedPos);
@@ -232,7 +232,7 @@ public class Strider extends WalkingAnimal implements EntityRideable {
         if (creature instanceof Player) {
             Player player = (Player) creature;
             return player.spawned && player.isAlive() && !player.closed && distance <= 49
-                    && player.getInventory().getItemInHand().getId() == Item.WARPED_FUNGUS_ON_A_STICK;
+                    && player.getInventory().getItemInHandFast().getId() == Item.WARPED_FUNGUS_ON_A_STICK;
         }
         return false;
     }
@@ -240,5 +240,20 @@ public class Strider extends WalkingAnimal implements EntityRideable {
     @Override
     protected boolean canSwimIn(int block) {
         return block == BlockID.WATER || block == BlockID.STILL_WATER || block == BlockID.LAVA || block == BlockID.STILL_LAVA;
+    }
+
+    @Override
+    public boolean entityBaseTick(int tickDiff) {
+        this.updatePassengers();
+        return super.entityBaseTick(tickDiff);
+    }
+
+    @Override
+    public void setHealth(float health) {
+        super.setHealth(health);
+
+        if (this.saddled && this.isAlive()) {
+            this.sendHealthToRider();
+        }
     }
 }

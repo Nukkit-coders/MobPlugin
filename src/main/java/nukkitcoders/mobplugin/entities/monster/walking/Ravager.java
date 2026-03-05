@@ -39,7 +39,7 @@ public class Ravager extends WalkingMonster {
 
     @Override
     public float getWidth() {
-        return 1.95f;
+        return 1.9f;
     }
 
     @Override
@@ -50,6 +50,11 @@ public class Ravager extends WalkingMonster {
     @Override
     public int getKillExperience() {
         return 0;
+    }
+
+    @Override
+    protected float getKnockbackModifier() {
+        return 0.25f;
     }
 
     @Override

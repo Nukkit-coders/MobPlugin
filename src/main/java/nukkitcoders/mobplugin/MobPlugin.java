@@ -4,9 +4,10 @@ import cn.nukkit.Player;
 import cn.nukkit.blockentity.BlockEntity;
 import cn.nukkit.command.Command;
 import cn.nukkit.command.CommandSender;
+import cn.nukkit.dispenser.DispenseBehaviorRegister;
 import cn.nukkit.entity.Entity;
 import cn.nukkit.entity.item.EntityItem;
-import cn.nukkit.event.Listener;
+import cn.nukkit.item.ItemID;
 import cn.nukkit.level.GameRule;
 import cn.nukkit.level.Level;
 import cn.nukkit.level.Position;
@@ -28,14 +29,16 @@ import nukkitcoders.mobplugin.entities.monster.swimming.ElderGuardian;
 import nukkitcoders.mobplugin.entities.monster.swimming.Guardian;
 import nukkitcoders.mobplugin.entities.monster.walking.*;
 import nukkitcoders.mobplugin.entities.projectile.*;
+import nukkitcoders.mobplugin.utils.ShearsDispenseBehaviour;
 import nukkitcoders.mobplugin.utils.Utils;
 
 /**
  * @author <a href="mailto:kniffman@googlemail.com">Michael Gertz (kniffo80)</a>
  */
-public class MobPlugin extends PluginBase implements Listener {
+public class MobPlugin extends PluginBase {
 
     private static MobPlugin INSTANCE;
+
     public Config config;
 
     public MobPlugin() {
@@ -63,15 +66,12 @@ public class MobPlugin extends PluginBase implements Listener {
             return;
         }
 
+        DispenseBehaviorRegister.registerBehavior(ItemID.SHEARS, new ShearsDispenseBehaviour());
         this.registerEntities();
         this.getServer().getPluginManager().registerEvents(new EventListener(), this);
 
         if (config.spawnDelay > 0) {
             this.getServer().getScheduler().scheduleDelayedRepeatingTask(this, new AutoSpawnTask(this, config.pluginConfig), config.spawnDelay, config.spawnDelay);
-
-            if (!this.getServer().getPropertyBoolean("spawn-animals") || !this.getServer().getPropertyBoolean("spawn-mobs")) {
-                this.getServer().getLogger().notice("Disabling mob/animal spawning from server.properties does not disable spawning in MobPlugin");
-            }
         } else {
             this.getServer().getLogger().notice("Mob spawning is disabled (autospawn-ticks <= 0)");
         }
@@ -79,7 +79,7 @@ public class MobPlugin extends PluginBase implements Listener {
 
     @Override
     public void onDisable() {
-        RouteFinderThreadPool.shutDownNow();
+        RouteFinderThreadPool.shutdown();
     }
 
     @Override
@@ -113,18 +113,21 @@ public class MobPlugin extends PluginBase implements Listener {
                 Position pos = playerThatSpawns.getPosition();
                 Entity ent;
                 if ((ent = Entity.createEntity(mob, pos)) != null) {
+                    if (ent instanceof BaseEntity) {
+                        ((BaseEntity) ent).setPersistent(true);
+                    }
                     ent.spawnToAll();
-                    sender.sendMessage("\u00A76Spawned " + mob + " to " + playerThatSpawns.getName());
+                    sender.sendMessage("§6Spawned " + mob + " to " + playerThatSpawns.getName());
                 } else {
-                    sender.sendMessage("\u00A7cUnable to spawn " + mob);
+                    sender.sendMessage("§cUnable to spawn " + mob);
                 }
             } else {
-                sender.sendMessage("\u00A7cUnknown player " + (args.length == 2 ? args[1] : sender.getName()));
+                sender.sendMessage("§cUnknown player " + (args.length == 2 ? args[1] : sender.getName()));
             }
         } else if (cmd.getName().equals("mob")) {
             if (args.length == 0) {
                 sender.sendMessage("-- MobPlugin " + this.getDescription().getVersion() + " --");
-                sender.sendMessage("/mob spawn <entity> <opt:player> - Summon entity");
+                sender.sendMessage("/mob spawn <entity> [player] - Summon entity");
                 sender.sendMessage("/mob removeall - Remove all living mobs");
                 sender.sendMessage("/mob removeitems - Remove all items from ground");
                 return true;
@@ -133,7 +136,7 @@ public class MobPlugin extends PluginBase implements Listener {
             switch (args[0].toLowerCase()) {
                 case "spawn":
                     if (args.length == 1 || (args.length == 2 && !(sender instanceof Player))) {
-                        sender.sendMessage("Usage: /mob spawn <entity> <opt:player>");
+                        sender.sendMessage("Usage: /mob spawn <entity> [player]");
                         break;
                     }
 
@@ -151,6 +154,9 @@ public class MobPlugin extends PluginBase implements Listener {
 
                         Entity ent;
                         if ((ent = Entity.createEntity(mob, pos)) != null) {
+                            if (ent instanceof BaseEntity) {
+                                ((BaseEntity) ent).setPersistent(true);
+                            }
                             ent.spawnToAll();
                             sender.sendMessage("Spawned " + mob + " to " + playerThatSpawns.getName());
                         } else {
@@ -176,7 +182,7 @@ public class MobPlugin extends PluginBase implements Listener {
                     count = 0;
                     for (Level level : getServer().getLevels().values()) {
                         for (Entity entity : level.getEntities()) {
-                            if (entity instanceof EntityItem && entity.isOnGround()) {
+                            if (entity instanceof EntityItem) {
                                 entity.close();
                                 ++count;
                             }
@@ -299,6 +305,7 @@ public class MobPlugin extends PluginBase implements Listener {
         return !INSTANCE.config.mobSpawningDisabledWorlds.contains(level.getName().toLowerCase()) && level.getGameRules().getBoolean(GameRule.DO_MOB_SPAWNING);
     }
 
+    @Deprecated
     public static boolean shouldMobBurn(Level level, BaseEntity entity) {
         int time = level.getTime() % Level.TIME_FULL;
         return !entity.isOnFire() && !level.isRaining() && (time < 12567 || time > 23450) && !Utils.entityInsideWaterFast(entity) && level.canBlockSeeSky(entity);

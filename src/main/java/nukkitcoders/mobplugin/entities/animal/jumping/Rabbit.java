@@ -61,7 +61,7 @@ public class Rabbit extends JumpingAnimal {
             if (player.closed) {
                 return false;
             }
-            int id = player.getInventory().getItemInHand().getId();
+            int id = player.getInventory().getItemInHandFast().getId();
             return player.spawned && player.isAlive() && (id == Item.DANDELION || id == Item.CARROT || id == Item.GOLDEN_CARROT) && distance <= 49;
         }
         return super.targetOption(creature, distance);

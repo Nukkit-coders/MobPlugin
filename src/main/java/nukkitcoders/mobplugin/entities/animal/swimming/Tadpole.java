@@ -17,7 +17,7 @@ public class Tadpole extends Fish {
     }
 
     @Override
-    int getBucketMeta() {
+    protected int getBucketMeta() {
         return 13;
     }
 

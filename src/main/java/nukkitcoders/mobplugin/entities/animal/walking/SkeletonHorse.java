@@ -79,4 +79,9 @@ public class SkeletonHorse extends HorseBase implements EntitySmite {
     public boolean targetOption(EntityCreature creature, double distance) {
         return false;
     }
+
+    @Override
+    public boolean canDespawn() {
+        return false; // TODO: trap only
+    }
 }

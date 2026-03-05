@@ -63,9 +63,7 @@ public class Sheep extends WalkingAnimal {
             this.setColor(this.namedTag.getByte("Color"));
         }
 
-        if (!this.namedTag.contains("Sheared")) {
-            this.namedTag.putBoolean("Sheared", false);
-        } else if (this.namedTag.getBoolean("Sheared")) {
+        if (this.namedTag.getBoolean("Sheared")) {
             this.sheared = true;
             this.unshearTicks = Utils.rand(2400, 4800);
             this.setDataFlag(DATA_FLAGS, DATA_FLAG_SHEARED, true);
@@ -132,7 +130,7 @@ public class Sheep extends WalkingAnimal {
     public boolean targetOption(EntityCreature creature, double distance) {
         if (creature instanceof Player) {
             Player player = (Player) creature;
-            return player.spawned && player.isAlive() && !player.closed && player.getInventory().getItemInHand().getId() == Item.WHEAT && distance <= 49;
+            return player.spawned && player.isAlive() && !player.closed && player.getInventory().getItemInHandFast().getId() == Item.WHEAT && distance <= 49;
         }
         return super.targetOption(creature, distance);
     }

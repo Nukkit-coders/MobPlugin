@@ -9,22 +9,25 @@ import java.util.concurrent.*;
  */
 public class RouteFinderThreadPool {
 
-    public static ThreadPoolExecutor executor =
+    private static volatile boolean running = true;
+
+    private static final ThreadPoolExecutor executor =
             new ThreadPoolExecutor(
                     1,
-                    Runtime.getRuntime().availableProcessors() + 1,
+                    Runtime.getRuntime().availableProcessors(),
                     1, TimeUnit.SECONDS,
                     new LinkedBlockingQueue<>(),
                     new ThreadPoolExecutor.AbortPolicy()
             );
 
     public static void executeRouteFinderThread(RouteFinderSearchTask t) {
-        if (!executor.isShutdown() && !executor.isTerminating()) {
+        if (running) {
             executor.execute(t);
         }
     }
 
-    public static void shutDownNow() {
+    public static void shutdown() {
+        running = false;
         executor.shutdownNow();
     }
 }

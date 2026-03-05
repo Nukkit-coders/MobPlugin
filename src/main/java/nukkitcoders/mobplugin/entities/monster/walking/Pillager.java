@@ -1,21 +1,19 @@
 package nukkitcoders.mobplugin.entities.monster.walking;
 
 import cn.nukkit.Player;
-import cn.nukkit.block.Block;
 import cn.nukkit.entity.Entity;
 import cn.nukkit.entity.EntityCreature;
+import cn.nukkit.entity.EntityLiving;
 import cn.nukkit.entity.projectile.EntityArrow;
 import cn.nukkit.entity.projectile.EntityProjectile;
 import cn.nukkit.event.entity.EntityShootBowEvent;
 import cn.nukkit.event.entity.ProjectileLaunchEvent;
 import cn.nukkit.item.Item;
-import cn.nukkit.level.Location;
 import cn.nukkit.level.format.FullChunk;
 import cn.nukkit.nbt.tag.CompoundTag;
 import cn.nukkit.network.protocol.LevelSoundEventPacket;
 import cn.nukkit.network.protocol.MobEquipmentPacket;
 import nukkitcoders.mobplugin.entities.monster.WalkingMonster;
-import nukkitcoders.mobplugin.utils.FastMathLite;
 import nukkitcoders.mobplugin.utils.Utils;
 
 import java.util.ArrayList;
@@ -43,7 +41,7 @@ public class Pillager extends WalkingMonster {
 
     @Override
     public float getHeight() {
-        return 1.95f;
+        return 1.9f;
     }
 
     @Override
@@ -54,43 +52,39 @@ public class Pillager extends WalkingMonster {
 
     @Override
     public void attackEntity(Entity player) {
-        if (this.attackDelay > 80 && Utils.rand(1, 32) < 4 && this.distanceSquared(player) <= 100) {
+        if (this.attackDelay > 60 && this.distanceSquared(player) <= 64) { // 8 blocks
+            if (!this.seesTarget(player)) {
+                return;
+            }
+
             this.attackDelay = 0;
 
-            double f = 1.5;
-            double yaw = this.yaw;
-            double pitch = this.pitch;
-            double yawR = FastMathLite.toRadians(yaw);
-            double pitchR = FastMathLite.toRadians(pitch);
-            Location pos = new Location(this.x - Math.sin(yawR) * Math.cos(pitchR) * 0.5, this.y + this.getHeight() - 0.18,
-                    this.z + Math.cos(yawR) * Math.cos(pitchR) * 0.5, yaw, pitch, this.level);
+            EntityArrow shot = (EntityArrow) Entity.createEntity("Arrow", this.add(0, this.getEyeHeight(), 0), this);
 
-            if (this.getLevel().getBlockIdAt(pos.getFloorX(), pos.getFloorY(), pos.getFloorZ()) == Block.AIR) {
-                Entity k = Entity.createEntity("Arrow", pos, this);
-                if (!(k instanceof EntityArrow)) {
-                    return;
-                }
+            if (Utils.hasCollisionBlocks(shot.level, shot, shot.boundingBox)) {
+                shot.close();
+                return;
+            }
 
-                EntityArrow arrow = (EntityArrow) k;
-                setProjectileMotion(arrow, pitch, yawR, pitchR, f);
+            EntityShootBowEvent ev = new EntityShootBowEvent(this, Item.get(Item.ARROW, 0, 1), shot, 2);
+            this.server.getPluginManager().callEvent(ev);
 
-                EntityShootBowEvent ev = new EntityShootBowEvent(this, Item.get(Item.ARROW, 0, 1), arrow, f);
-                this.server.getPluginManager().callEvent(ev);
+            shot.setMotion(player.add(Utils.rand(-0.1, 0.1), Utils.rand(-0.1, 0.1) + 0.3, Utils.rand(-0.1, 0.1)).subtract(this).normalize().multiply(ev.getForce()));
 
-                EntityProjectile projectile = ev.getProjectile();
-                if (ev.isCancelled()) {
+            EntityProjectile projectile = ev.getProjectile();
+            if (ev.isCancelled()) {
+                projectile.close();
+            } else {
+                ProjectileLaunchEvent launch = new ProjectileLaunchEvent(projectile);
+                this.server.getPluginManager().callEvent(launch);
+                if (launch.isCancelled()) {
                     projectile.close();
                 } else {
-                    ProjectileLaunchEvent launch = new ProjectileLaunchEvent(projectile);
-                    this.server.getPluginManager().callEvent(launch);
-                    if (launch.isCancelled()) {
-                        projectile.close();
-                    } else {
-                        projectile.namedTag.putDouble("damage", 4);
-                        projectile.spawnToAll();
-                        ((EntityArrow) projectile).setPickupMode(EntityArrow.PICKUP_NONE);
-                        this.level.addLevelSoundEvent(this, LevelSoundEventPacket.SOUND_CROSSBOW_SHOOT);
-                    }
+                    projectile.namedTag.putDouble("damage", 4);
+                    projectile.updateRotation();
+                    projectile.spawnToAll();
+                    ((EntityArrow) projectile).setPickupMode(EntityArrow.PICKUP_NONE);
+                    this.level.addLevelSoundEvent(this, LevelSoundEventPacket.SOUND_CROSSBOW_SHOOT);
                 }
             }
         }
@@ -126,8 +120,8 @@ public class Pillager extends WalkingMonster {
     }
 
     @Override
-    public int nearbyDistanceMultiplier() {
-        return 20;
+    protected int nearbyDistanceMultiplier() {
+        return target instanceof EntityLiving || followTarget instanceof EntityLiving ? 20 : 1;
     }
 
     @Override
@@ -146,5 +140,10 @@ public class Pillager extends WalkingMonster {
             }
         }
         return hasTarget;
+    }
+
+    @Override
+    public boolean canDespawn() {
+        return false;
     }
 }

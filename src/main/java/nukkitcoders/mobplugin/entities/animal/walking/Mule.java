@@ -56,7 +56,7 @@ public class Mule extends HorseBase {
         if (canTarget && (creature instanceof Player)) {
             Player player = (Player) creature;
             return player.spawned && player.isAlive() && !player.closed &&
-                    this.isFeedItem(player.getInventory().getItemInHand()) && distance <= 49;
+                    this.hasFeedItem(player) && distance <= 49;
         }
         return false;
     }

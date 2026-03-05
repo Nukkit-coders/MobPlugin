@@ -12,7 +12,6 @@ import cn.nukkit.level.format.FullChunk;
 import cn.nukkit.math.Vector3;
 import cn.nukkit.nbt.tag.CompoundTag;
 import cn.nukkit.network.protocol.AddEntityPacket;
-import cn.nukkit.network.protocol.BossEventPacket;
 import cn.nukkit.network.protocol.DataPacket;
 import nukkitcoders.mobplugin.MobPlugin;
 import nukkitcoders.mobplugin.entities.Boss;
@@ -47,7 +46,6 @@ public class EnderDragon extends FlyingMonster implements Boss {
     public void initEntity() {
         this.setMaxHealth(200);
         super.initEntity();
-        this.setHealth(200);
 
         this.fireProof = true;
         this.setDataFlag(DATA_FLAGS, DATA_FLAG_FIRE_IMMUNE, true);
@@ -141,26 +139,17 @@ public class EnderDragon extends FlyingMonster implements Boss {
     }
 
     @Override
-    public void spawnTo(Player player) {
-        super.spawnTo(player);
-        if (!MobPlugin.getInstance().config.showBossBar) {
-            return;
-        }
-        BossEventPacket pkBoss = new BossEventPacket();
-        pkBoss.bossEid = this.id;
-        pkBoss.type = BossEventPacket.TYPE_SHOW;
-        pkBoss.title = this.getName();
-        pkBoss.healthPercent = this.health / 100;
-        player.dataPacket(pkBoss);
-    }
-
-    @Override
-    protected boolean isInTickingRange() {
+    protected boolean isInTickingRange(double rangeSquared) {
         return true;
     }
 
     @Override
     protected boolean applyNameTag(Player player, Item item) {
+        return false;
+    }
+
+    @Override
+    public boolean canDespawn() {
         return false;
     }
 }

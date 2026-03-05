@@ -19,7 +19,7 @@ public class MagmaCube extends JumpingMonster {
 
     public static final int SIZE_SMALL = 1;
     public static final int SIZE_MEDIUM = 2;
-    public static final int SIZE_BIG = 3;
+    public static final int SIZE_BIG = 4;
 
     protected int size;
 
@@ -34,26 +34,37 @@ public class MagmaCube extends JumpingMonster {
 
     @Override
     public float getWidth() {
-        return 0.51f + size * 0.51f;
+        return 1f;
     }
 
     @Override
     public float getHeight() {
-        return 0.51f + size * 0.51f;
+        return 1f;
     }
 
     @Override
     public float getLength() {
-        return 0.51f + size * 0.51f;
+        return 1f;
     }
 
     @Override
     protected void initEntity() {
+        super.initEntity();
+
+        this.fireProof = true;
+        this.noFallDamage = true;
+
         if (this.namedTag.contains("Size")) {
             this.size = this.namedTag.getInt("Size");
         } else {
             this.size = Utils.rand(1, 3);
+
+            if (this.size == 3) {
+                this.size = SIZE_BIG;
+            }
         }
+
+        this.setScale(0.51f + size * 0.51f);
 
         if (size == SIZE_BIG) {
             this.setMaxHealth(16);
@@ -62,13 +73,6 @@ public class MagmaCube extends JumpingMonster {
         } else if (size == SIZE_SMALL) {
             this.setMaxHealth(1);
         }
-
-        super.initEntity();
-
-        this.fireProof = true;
-        this.noFallDamage = true;
-
-        this.setScale(0.51f + size * 0.51f);
 
         if (size == SIZE_BIG) {
             this.setDamage(new float[] { 0, 3, 4, 6 });
@@ -175,5 +179,16 @@ public class MagmaCube extends JumpingMonster {
     @Override
     public String getName() {
         return this.hasCustomName() ? this.getNameTag() : "Magma Cube";
+    }
+
+    @Override
+    protected double getJumpStrength() {
+        if (this.size == SIZE_BIG) {
+            return 0.42;
+        } else if (this.size == SIZE_MEDIUM) {
+            return 0.4;
+        } else {
+            return 0.38;
+        }
     }
 }
